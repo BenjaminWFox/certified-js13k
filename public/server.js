@@ -5,7 +5,31 @@
  * @param {Array} users
  */
 const users = [];
+
+/**
+ * Games in progress
+ * @param {Array} games
+ */
 const games = [];
+
+/**
+ * Job types
+ * @param {Object} Jobs
+ */
+const Jobs = [
+	{title: 'Line Worker', type: 'line', warning: 'Points frantically to the right!', reaction: 'jumping up'},
+	{title: 'Ground Worker', type: 'ground', warning: 'Yells to watch out for the power surge!', reaction: 'stepping forward'},
+];
+
+/**
+ * Hazard types
+ * @param {Object} Hazards
+ */
+const Hazards = [
+	{type: 'surge', name: 'power surge', impacts: 'line', observedBy: 'ground'},
+	{type: 'train', name: 'freight train', impacts: 'ground', observedBy: 'line'},
+];
+
 
 /**
  * Convert milliseconds to time string (mm:ss:mss).
@@ -53,6 +77,16 @@ function removeUser(user) {
 // 	game.end();
 // }
 
+class Hazard {
+	constructor(hazard) {
+		this.type = hazard;
+		this.spawnedAt = Date.now();
+		this.reactionCutoff = 5000;
+		this.warnedAt = undefined;
+		this.reactedAt = undefined;
+	}
+}
+
 /**
  * Game class
  */
@@ -71,6 +105,7 @@ class Game {
 		this.remainingTime = this.clockTotal;
 		this.tickRate = 50;
 		this.ticker = undefined;
+		this.activeHazard = null;
 		console.log('Constructed a new game. ST:', this.startTime);
 	}
 
@@ -94,10 +129,34 @@ class Game {
 		if(this.clockTotal <= 0) {
 			clearInterval(this.ticker);
 			this.timeUp();
+		} else {
+			this.runHazardSpawner();
+			this.checkForHazardDeath();
 		}
-
 		this.remainingTime = (this.clockTotal).toTime();
 		this.updateClients('tick', this.remainingTime);
+	}
+
+	runHazardSpawner() {
+		const doSpawn = Math.floor(Math.random() * 100) + 1;
+		if(doSpawn === 50 && !this.activeHazard) {
+			this.activeHazard = new Hazard(Hazards[Math.round(Math.random())]);
+			console.log('Spawning a hazard!', this.activeHazard.type.observedBy, this.activeHazard.type.impacts);
+			this.users.forEach(user => {
+				if(user.job.type === this.activeHazard.type.observedBy) {
+					this.updateClient(user, 'hazard', this.activeHazard);
+				}
+			});
+		}
+	}
+
+	checkForHazardDeath() {
+		if(this.activeHazard) {
+			if(this.activeHazard.spawnedAt + this.activeHazard.reactionCutoff < Date.now() && !this.activeHazard.reactedAt ||
+				this.activeHazard.reactedAt && this.activeHazard.spawnedAt + this.activeHazard.reactionCutoff < this.activeHazard.reactedAt) {
+				console.log('GAME OVER');
+			}
+		}
 	}
 
 	updateUserStatus() {
@@ -118,12 +177,33 @@ class Game {
 	}
 
 	sendMessageFromTo(msg, user, partner) {
+		if(this.activeHazard) {
+			if(msg.type === 'warning') {
+				if(this.activeHazard.type.observedBy === user.job.type) {
+					this.activeHazard.warnedAt = Date.now();
+				}
+			}
+			if(msg.type === 'reaction') {
+				if(this.activeHazard.type.impacts === user.job.type) {
+					this.activeHazard.reactedAt = Date.now();
+					if(this.activeHazard.reactedAt < this.activeHazard.spawnedAt + this.activeHazard.reactionCutoff) {
+						console.log('NICE YOU AVOIDED IT');
+						this.updateClients('avoided', '');
+						this.activeHazard = null;
+					}
+				}
+			}
+		}
 		partner.socket.emit('msg', msg);
 	}
 
 	timeUp() {
 		console.log('TIME IS UP');
 		// This is the win condition. If time is 0 players were successful.
+	}
+
+	spawnHazard() {
+
 	}
 
 	end() {
@@ -152,14 +232,6 @@ class Game {
 	}
 
 }
-
-/**
- *
- */
-const Jobs = [
-	{title: 'Line Worker', type: 'line', warning: 'Points frantically to the right!', reaction: 'jumping up'},
-	{title: 'Ground Worker', type: 'ground', warning: 'Yells to watch out for the power surge!', reaction: 'stepping forward'},
-];
 
 /**
  * User session class
@@ -261,22 +333,6 @@ class User {
 		this.socket.emit("draw", this.partner.guess);
 	}
 
-}
-
-class LineWorker extends User {
-	constructor(socket) {
-		super(socket, 'Points frantically to the right!', 'jumping up');
-		this.jobTitle = 'Line Worker';
-		this.jobType = 'line';
-	}
-}
-
-class GroundWorker extends User {
-	constructor(socket) {
-		super(socket, 'Yells to watch out for the power surge!', 'stepping forward');
-		this.jobTitle = 'Ground Worker';
-		this.jobType = 'ground';
-	}
 }
 
 /**

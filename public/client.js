@@ -5,6 +5,7 @@
     let socket, //Socket.IO client
         buttons, //Button elements
         message, //Message element
+        timer, //Timer element
         score, //Score element
         playerId,
         playerJob,
@@ -38,6 +39,10 @@
      */
     function setMessage(text) {
         message.innerHTML = text;
+    }
+
+    function setTimer(text) {
+        timer.innerHTML = text;
     }
 
     /**
@@ -103,7 +108,7 @@
 
         socket.on("tick", (time) => {
             console.log('tick');
-            setMessage(time);
+            setTimer(time);
         });
 
         socket.on("job", (jobInfo) => {
@@ -112,15 +117,23 @@
             jobType = jobInfo.type;
         });
 
+        socket.on("hazard", (payload) => {
+            setMessage(`Careful, a ${payload.type.name}`);
+        })
+
+        socket.on("avoided", (payload) => {
+            setMessage(`Nice, hazard avoided!`);
+        })
+
         socket.on("msg", (payload) => {
-            console.log(`I received a ${payload.type} from my partner that says ${payload.message}.`)
+            setMessage(`I received a ${payload.type} from my partner that says ${payload.message}.`);
         })
 
         socket.on("users", (usersStatus) => {
             let id = 1;
             console.log('Got user info', usersStatus);
             usersStatus.forEach(status => {
-                document.getElementById(`user${id}`).innerHTML = `Player${id} ${id === playerId ? '(you)' : ''} is ${status ? 'ready' : 'not ready'}`;
+                document.getElementById(`user${id}`).innerHTML = `Player${id} ${id === playerId ? `(you) ${playerJob.type.toUpperCase()}` : ''} is ${status ? 'ready' : 'not ready'}`;
                 ++id;
             });
         });
@@ -142,6 +155,7 @@
         socket = io({ upgrade: false, transports: ["websocket"] });
         buttons = document.getElementsByTagName("button");
         message = document.getElementById("message");
+        timer = document.getElementById("timer");
         score = document.getElementById("score");
         disableButtons();
         bind();
