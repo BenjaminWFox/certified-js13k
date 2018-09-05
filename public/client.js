@@ -112,6 +112,10 @@
             jobType = jobInfo.type;
         });
 
+        socket.on("msg", (payload) => {
+            console.log(`I received a ${payload.type} from my partner that says ${payload.message}.`)
+        })
+
         socket.on("users", (usersStatus) => {
             let id = 1;
             console.log('Got user info', usersStatus);

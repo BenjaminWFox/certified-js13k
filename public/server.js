@@ -117,6 +117,10 @@ class Game {
 		});
 	}
 
+	sendMessageFromTo(msg, user, partner) {
+		partner.socket.emit('msg', msg);
+	}
+
 	timeUp() {
 		console.log('TIME IS UP');
 		// This is the win condition. If time is 0 players were successful.
@@ -153,8 +157,8 @@ class Game {
  *
  */
 const Jobs = [
-	{title: 'Line Worker', type: 'line'},
-	{title: 'Ground Worker', type: 'ground'},
+	{title: 'Line Worker', type: 'line', warning: 'Points frantically to the right!', reaction: 'jumping up'},
+	{title: 'Ground Worker', type: 'ground', warning: 'Yells to watch out for the power surge!', reaction: 'stepping forward'},
 ];
 
 /**
@@ -179,16 +183,19 @@ class User {
 	}
 
 	takeAction(action) {
+		console.log('Taking action!');
 		if(action === PLAYER_READY) {
 			this.isReady = true;
 			console.log('notify ready');
 			this.game.updateUserStatus();
 		}
 		if(action === SENT_WARNING) {
-			this.game.sendWarning(this, this.partner, this.warning());
+			console.log('Sending a warning');
+			this.game.sendMessageFromTo(this.warning(), this, this.partner);
 		}
 		if(action === REACTED_TO_WARNING) {
-			this.game.sendReaction(this, this.partner, this.reaction());
+			console.log('Sending my reaction');
+			this.game.sendMessageFromTo(this.reaction(), this, this.partner);
 		}
 	}
 
@@ -226,11 +233,11 @@ class User {
 	}
 
 	warning() {
-		return(this.warningMsg.toString());
+		return({type: 'warning', message: this.job.warning.toString()});
 	}
 
 	reaction() {
-		return(`I\'ve reacted to the warning by ${this.reactGerund}!`);
+		return({type: 'reaction', message: `I\'ve reacted to the warning by ${this.job.reaction}!`});
 	}
 
 	/**
