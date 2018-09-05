@@ -47,7 +47,7 @@ function createZip() {
     archive.finalize();
 };
 
-app.set('port', (process.env.PORT || 3000))
+app.set('port', (process.env.PORT || 3030))
     .set('storage', process.env.DATABASE_URL || 'sqlite:storage.sqlite')
     .get('/server-info', (req, res) => {
         let limit = 13312,

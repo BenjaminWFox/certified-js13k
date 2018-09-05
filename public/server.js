@@ -5,6 +5,7 @@
  * @param {Array} users
  */
 const users = [];
+const games = [];
 
 /**
  * Convert milliseconds to time string (mm:ss:mss).
@@ -24,27 +25,33 @@ Number.prototype.toTime = function() {
 };
 
 /**
- * Find opponent for a user
+ * Find partner for a user
  * @param {User} user
  */
-function findOpponent(user) {
+function findPartner(user) {
 	for (let i = 0; i < users.length; i++) {
 		if (
 			user !== users[i] &&
-			users[i].opponent === null
+			users[i].partner === null
 		) {
-			new Game(user, users[i], user.socket).start();
+			games.push(new Game(user, users[i]).init());
 		}
 	}
 }
 
 /**
- * Remove user session
+ * Remove user session & game instance
  * @param {User} user
  */
 function removeUser(user) {
+	user.game.end();
+	games.splice(games.indexOf(user.game), 1);
 	users.splice(users.indexOf(user), 1);
 }
+
+// function cancelGame(game) {
+// 	game.end();
+// }
 
 /**
  * Game class
@@ -55,27 +62,30 @@ class Game {
 	 * @param {User} user1
 	 * @param {User} user2
 	 */
-	constructor(user1, user2, socket) {
+	constructor(user1, user2) {
 		this.user1 = user1;
 		this.user2 = user2;
+		this.users = [this.user1, this.user2];
 		this.startTime = Date.now();
-		this.clockTotal = 120000;
+		this.clockTotal = 60000;
 		this.remainingTime = this.clockTotal;
 		this.tickRate = 50;
 		this.ticker = undefined;
-		this.socket = socket;
-		socket.emit("tick");
-		console.log('Constructed a new game');
+		console.log('Constructed a new game. ST:', this.startTime);
 	}
 
 	/**
 	 * Start new game
 	 */
+	init() {
+		this.user1.start(this, this.user2, 1);
+		this.user2.start(this, this.user1, 2);
+		this.updateUserStatus();
+		return this;
+	}
+
 	start() {
-		this.user1.start(this, this.user2);
-		this.user2.start(this, this.user1);
-		console.log('Start:', this.tickRate, this.clockTotal);
-		this.ticker = setInterval(this.tick.bind(this), this.tickRate);
+		this.ticker = this.ticker ? this.ticker : setInterval(this.tick.bind(this), this.tickRate);
 	}
 
 	tick() {
@@ -87,8 +97,24 @@ class Game {
 		}
 
 		this.remainingTime = (this.clockTotal).toTime();
-		console.log(this.remainingTime);
-		this.socket.emit("tick", this.remainingTime);
+		this.updateClients('tick', this.remainingTime);
+	}
+
+	updateUserStatus() {
+		if(this.user1.isReady && this.user2.isReady) {
+			this.start();
+		}
+		this.updateClients('users', [this.user1.isReady, this.user2.isReady]);
+	}
+
+	updateClient(user, event, payload) {
+		user.socket.emit(event, payload);
+	}
+
+	updateClients(event, payload) {
+		this.users.forEach(user => {
+			user.socket.emit(event, payload);
+		});
 	}
 
 	timeUp() {
@@ -96,12 +122,17 @@ class Game {
 		// This is the win condition. If time is 0 players were successful.
 	}
 
+	end() {
+		console.log('Ending game', this.startTime);
+		clearInterval(this.ticker);
+	}
+
 	/**
 	 * Is game ended
 	 * @return {boolean}
 	 */
 	ended() {
-		return this.user1.guess !== GUESS_NO && this.user2.guess !== GUESS_NO;
+		// return this.user1.guess !== GUESS_NO && this.user2.guess !== GUESS_NO;
 	}
 
 	/**
@@ -114,27 +145,17 @@ class Game {
 		if(this.user2.guess === SENT_WARNING) {
 			this.user2.warn(this.user2.warning);
 		}
-		// if (
-		// 	this.user1.guess === GUESS_ROCK && this.user2.guess === GUESS_SCISSORS ||
-		// 	this.user1.guess === GUESS_PAPER && this.user2.guess === GUESS_ROCK ||
-		// 	this.user1.guess === GUESS_SCISSORS && this.user2.guess === GUESS_PAPER
-		// ) {
-		// 	this.user1.win();
-		// 	this.user2.lose();
-		// } else if (
-		// 	this.user2.guess === GUESS_ROCK && this.user1.guess === GUESS_SCISSORS ||
-		// 	this.user2.guess === GUESS_PAPER && this.user1.guess === GUESS_ROCK ||
-		// 	this.user2.guess === GUESS_SCISSORS && this.user1.guess === GUESS_PAPER
-		// ) {
-		// 	this.user2.win();
-		// 	this.user1.lose();
-		// } else {
-		// 	this.user1.draw();
-		// 	this.user2.draw();
-		// }
 	}
 
 }
+
+/**
+ *
+ */
+const Jobs = [
+	{title: 'Line Worker', type: 'line'},
+	{title: 'Ground Worker', type: 'ground'},
+];
 
 /**
  * User session class
@@ -147,37 +168,51 @@ class User {
 	constructor(socket) {
 		this.socket = socket;
 		this.game = null;
-		this.opponent = null;
+		this.partner = null;
+		this.isReady = false;
+		this.id = 0;
 		this.guess = GUESS_NO;
+		this.warningMsg = 'Oh no!';
+		this.reactGerund = 'pondering life';
+		this.job = undefined;
 		console.log('User constructed');
 	}
 
-	/**
-	 * Set guess value
-	 * @param {number} guess
-	 */
-	setGuess(guess) {
-		if (
-			!this.opponent ||
-			guess <= GUESS_NO ||
-			guess > REACTED_TO_WARNING
-		) {
-			return false;
+	takeAction(action) {
+		if(action === PLAYER_READY) {
+			this.isReady = true;
+			console.log('notify ready');
+			this.game.updateUserStatus();
 		}
-		this.guess = guess;
-		return true;
+		if(action === SENT_WARNING) {
+			this.game.sendWarning(this, this.partner, this.warning());
+		}
+		if(action === REACTED_TO_WARNING) {
+			this.game.sendReaction(this, this.partner, this.reaction());
+		}
+	}
+
+	getJob() {
+		if(this.partner.job) {
+			this.job = Jobs[~(Jobs.indexOf(this.partner.job)) + 2];
+		} else {
+			this.job = Jobs[Math.round(Math.random())];
+		}
 	}
 
 	/**
 	 * Start new game
 	 * @param {Game} game
-	 * @param {User} opponent
+	 * @param {User} partner
 	 */
-	start(game, opponent) {
+	start(game, partner, id) {
+		this.id = id;
 		this.game = game;
-		this.opponent = opponent;
+		this.partner = partner;
 		this.guess = GUESS_NO;
-		this.socket.emit("start");
+		this.isReady = false;
+		this.getJob();
+		this.socket.emit("start", {id, job: this.job});
 	}
 
 	/**
@@ -185,55 +220,55 @@ class User {
 	 */
 	end() {
 		this.game = null;
-		this.opponent = null;
+		this.partner = null;
 		this.guess = GUESS_NO;
 		this.socket.emit("end");
 	}
 
-	warn(msg) {
-		console.log(msg.toString());
+	warning() {
+		return(this.warningMsg.toString());
 	}
 
-	react(reactGerund) {
-		console.log(`I\'ve reacted to the warning by ${reactVerb}!`)
+	reaction() {
+		return(`I\'ve reacted to the warning by ${this.reactGerund}!`);
 	}
 
 	/**
 	 * Trigger win event
 	 */
 	win() {
-		this.socket.emit("win", this.opponent.guess);
+		this.socket.emit("win", this.partner.guess);
 	}
 
 	/**
 	 * Trigger lose event
 	 */
 	lose() {
-		this.socket.emit("lose", this.opponent.guess);
+		this.socket.emit("lose", this.partner.guess);
 	}
 
 	/**
 	 * Trigger draw event
 	 */
 	draw() {
-		this.socket.emit("draw", this.opponent.guess);
+		this.socket.emit("draw", this.partner.guess);
 	}
 
 }
 
 class LineWorker extends User {
 	constructor(socket) {
-		super(socket);
-		this.warning = 'Points frantically to the right!';
-		this.reaction = 'jumping';
+		super(socket, 'Points frantically to the right!', 'jumping up');
+		this.jobTitle = 'Line Worker';
+		this.jobType = 'line';
 	}
 }
 
 class GroundWorker extends User {
 	constructor(socket) {
-		super(socket);
-		this.warning = 'Yells to watch out for the power surge!';
-		this.reaction = 'jumping';
+		super(socket, 'Yells to watch out for the power surge!', 'stepping forward');
+		this.jobTitle = 'Ground Worker';
+		this.jobType = 'ground';
 	}
 }
 
@@ -245,32 +280,36 @@ module.exports = {
 
 	io: (socket) => {
 		let user;
-		if(users.length % 2 ===0) {
-			user = new LineWorker(socket);
-		} else {
-			user = new GroundWorker(socket);
-		}
+		// if(users.length % 2 ===0) {
+		// 	user = new LineWorker(socket);
+		// } else {
+		// 	user = new GroundWorker(socket);
+		// }
+		user = new User(socket);
+		// console.log({title: user.jobTitle, type: user.jobType});
+		// user.socket.emit('job', {title: user.jobTitle, type: user.jobType})
 		users.push(user);
-		findOpponent(user);
+
+		findPartner(user);
 
 		socket.on("disconnect", () => {
 			console.log("Disconnected: " + socket.id);
 			removeUser(user);
-			if (user.opponent) {
-				user.opponent.end();
-				findOpponent(user.opponent);
+			if (user.partner) {
+				user.partner.end();
+				findPartner(user.partner);
 			}
 		});
 
-		socket.on("guess", (guess) => {
-			console.log("Guess: " + socket.id);
-			if (user.setGuess(guess) && user.game.ended()) {
-				user.game.score();
-				user.game.start();
-				storage.get('games', 0).then(games => {
-					storage.set('games', games + 1);
-				});
-			}
+		socket.on("action", (action) => {
+			console.log("Button pressed: " + socket.id, action);
+			user.takeAction(action);
+			// user.game.update(user, action);
+			// if (user.setAction(action) && user.game.ended()) {
+			// 	storage.get('games', 0).then(games => {
+			// 		storage.set('games', games + 1);
+			// 	});
+			// }
 		});
 
 		console.log("Connected: " + socket.id);

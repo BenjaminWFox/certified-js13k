@@ -3,22 +3,58 @@
 <head>
 <title>Rock, Paper, Scissors</title>
 <meta charset="UTF-8">
+<style>
+html * {
+    box-sizing: border-box;
+}
+body {
+    background-color: #000;
+    text-align: center;
+}
+.wrapper {
+    background-color: #fff;
+    display: inline-block;
+    width: 400px;
+}
+.game {
+    height: 400px;
+    width: 400px;
+}
+.status {
+    border-bottom: 1px #666 solid;
+    padding: 5px;
+    text-align: left;
+}
+#message {
+    border-bottom: 1px #999 solid;
+    display: inline-block;
+    height: 50px;
+    margin-bottom: 5px;
+    padding: 5px;
+    width: 400px;
+}
+</style>
 </head>
 <body>
 
-<div style="text-align:center">
-    <h1 id="message"></h1>
-    <div>
-        <button>Send Warning</button>
-        <button>Paper</button>
-        <button>React to Warning</button>
+<div class="wrapper">
+    <div class="status">
+        <div id="user1"></div>
+        <div id="user2"></div>
     </div>
-    <div id="score"></div>
-    <p>
-        <a href="/stat">Statistics</a>
-    </p>
+    <div id="message"></div>
+    <div class="game" style="text-align:center">
+        <div>
+            <button class="warn" data-action="warning">Send Warning</button>
+            <button class="react" data-action="reaction">React to Warning</button>
+            <button class="ready" data-action="ready">Ready?</button>
+        </div>
+        <div id="score"></div>
+        <p>
+            <a href="/stat">Statistics</a>
+        </p>
+    </div>
 </div>
-
 <script src="/socket.io/socket.io.js"></script>
 <script src="/shared.js"></script>
 <script src="/client.js"></script>

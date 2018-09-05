@@ -6,6 +6,8 @@
         buttons, //Button elements
         message, //Message element
         score, //Score element
+        playerId,
+        playerJob,
         points = { //Game points
             draw: 0,
             win: 0,
@@ -56,10 +58,12 @@
      */
     function bind() {
 
-        socket.on("start", () => {
+        socket.on("start", (playerInfo) => {
             enableButtons();
-            console.log('start');
-            setMessage("Round " + (points.win + points.lose + points.draw + 1));
+            playerId = playerInfo.id;
+            playerJob = playerInfo.job;
+            console.log('start', playerId, playerJob.title);
+            setMessage("Waiting for players to ready up.");
         });
 
         socket.on("win", () => {
@@ -102,11 +106,26 @@
             setMessage(time);
         });
 
+        socket.on("job", (jobInfo) => {
+            console.log('Got a job', jobInfo);
+            jobTitle = jobInfo.title;
+            jobType = jobInfo.type;
+        });
+
+        socket.on("users", (usersStatus) => {
+            let id = 1;
+            console.log('Got user info', usersStatus);
+            usersStatus.forEach(status => {
+                document.getElementById(`user${id}`).innerHTML = `Player${id} ${id === playerId ? '(you)' : ''} is ${status ? 'ready' : 'not ready'}`;
+                ++id;
+            });
+        });
+
         for (let i = 0; i < buttons.length; i++) {
             ((button, guess) => {
                 button.addEventListener("click", function (e) {
-                    disableButtons();
-                    socket.emit("guess", guess);
+                    console.log('Client button cliecked:', button.dataset.action);
+                    socket.emit('action', button.dataset.action);
                 }, false);
             })(buttons[i], i + 1);
         }
