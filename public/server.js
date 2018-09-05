@@ -6,24 +6,22 @@
  */
 const users = [];
 
-		/**
-		 * Convert (milli)seconds to time string (hh:mm:ss[:mss]).
-		 *
-		 * @param Boolean isSec
-		 *
-		 * @return String
-		 */
-		Number.prototype.toTime = function(isSec) {
-		    var ms = isSec ? this * 1e3 : this,
-		        lm = ~(4 * !!isSec),  /* limit fraction */
-		        fmt = new Date(ms).toISOString().slice(11, lm).split(/:/g);
-        fmt.shift();
-		    var ssmm = fmt.pop().split('.');
-		    ssmm[1] = ssmm[1] >= 100 ? ssmm[1] / 10 : ssmm[1] / 10 + '0';
-				fmt.push(ssmm[0]);
-				fmt.push(ssmm[1]);
-		    return fmt.join(':');
-		};
+/**
+ * Convert milliseconds to time string (mm:ss:mss).
+ *
+ * @return String
+ */
+Number.prototype.toTime = function() {
+    var ms = this,
+        // lm = ~(4 * !!isSec),  /* limit fraction */ /* This will be -1 (isSec:true) or -5. */
+        fmt = new Date(ms).toISOString().slice(11, -1).split(/:/g);
+    fmt.shift();
+    var ssmm = fmt.pop().split('.');
+    ssmm[1] = ssmm[1] >= 100 ? ssmm[1] / 10 : ssmm[1] / 10 + '0';
+		fmt.push(ssmm[0]);
+		fmt.push(ssmm[1]);
+    return fmt.join(':');
+};
 
 /**
  * Find opponent for a user
@@ -35,7 +33,7 @@ function findOpponent(user) {
 			user !== users[i] &&
 			users[i].opponent === null
 		) {
-			new Game(user, users[i]).start();
+			new Game(user, users[i], user.socket).start();
 		}
 	}
 }
@@ -57,7 +55,7 @@ class Game {
 	 * @param {User} user1
 	 * @param {User} user2
 	 */
-	constructor(user1, user2) {
+	constructor(user1, user2, socket) {
 		this.user1 = user1;
 		this.user2 = user2;
 		this.startTime = Date.now();
@@ -65,6 +63,9 @@ class Game {
 		this.remainingTime = this.clockTotal;
 		this.tickRate = 50;
 		this.ticker = undefined;
+		this.socket = socket;
+		socket.emit("tick");
+		console.log('Constructed a new game');
 	}
 
 	/**
@@ -78,12 +79,21 @@ class Game {
 	}
 
 	tick() {
-		// console.log(this.tickRate, this.clockTotal);
 		this.clockTotal -= this.tickRate;
+
+		if(this.clockTotal <= 0) {
+			clearInterval(this.ticker);
+			this.timeUp();
+		}
+
 		this.remainingTime = (this.clockTotal).toTime();
 		console.log(this.remainingTime);
-		// this.socket.emit("tick", this.remainingTime);
+		this.socket.emit("tick", this.remainingTime);
+	}
 
+	timeUp() {
+		console.log('TIME IS UP');
+		// This is the win condition. If time is 0 players were successful.
 	}
 
 	/**
@@ -98,24 +108,30 @@ class Game {
 	 * Final score
 	 */
 	score() {
-		if (
-			this.user1.guess === GUESS_ROCK && this.user2.guess === GUESS_SCISSORS ||
-			this.user1.guess === GUESS_PAPER && this.user2.guess === GUESS_ROCK ||
-			this.user1.guess === GUESS_SCISSORS && this.user2.guess === GUESS_PAPER
-		) {
-			this.user1.win();
-			this.user2.lose();
-		} else if (
-			this.user2.guess === GUESS_ROCK && this.user1.guess === GUESS_SCISSORS ||
-			this.user2.guess === GUESS_PAPER && this.user1.guess === GUESS_ROCK ||
-			this.user2.guess === GUESS_SCISSORS && this.user1.guess === GUESS_PAPER
-		) {
-			this.user2.win();
-			this.user1.lose();
-		} else {
-			this.user1.draw();
-			this.user2.draw();
+		if(this.user1.guess === SENT_WARNING) {
+			this.user1.warn(this.user1.warning);
 		}
+		if(this.user2.guess === SENT_WARNING) {
+			this.user2.warn(this.user2.warning);
+		}
+		// if (
+		// 	this.user1.guess === GUESS_ROCK && this.user2.guess === GUESS_SCISSORS ||
+		// 	this.user1.guess === GUESS_PAPER && this.user2.guess === GUESS_ROCK ||
+		// 	this.user1.guess === GUESS_SCISSORS && this.user2.guess === GUESS_PAPER
+		// ) {
+		// 	this.user1.win();
+		// 	this.user2.lose();
+		// } else if (
+		// 	this.user2.guess === GUESS_ROCK && this.user1.guess === GUESS_SCISSORS ||
+		// 	this.user2.guess === GUESS_PAPER && this.user1.guess === GUESS_ROCK ||
+		// 	this.user2.guess === GUESS_SCISSORS && this.user1.guess === GUESS_PAPER
+		// ) {
+		// 	this.user2.win();
+		// 	this.user1.lose();
+		// } else {
+		// 	this.user1.draw();
+		// 	this.user2.draw();
+		// }
 	}
 
 }
@@ -133,6 +149,7 @@ class User {
 		this.game = null;
 		this.opponent = null;
 		this.guess = GUESS_NO;
+		console.log('User constructed');
 	}
 
 	/**
@@ -143,7 +160,7 @@ class User {
 		if (
 			!this.opponent ||
 			guess <= GUESS_NO ||
-			guess > GUESS_SCISSORS
+			guess > REACTED_TO_WARNING
 		) {
 			return false;
 		}
@@ -173,6 +190,14 @@ class User {
 		this.socket.emit("end");
 	}
 
+	warn(msg) {
+		console.log(msg.toString());
+	}
+
+	react(reactGerund) {
+		console.log(`I\'ve reacted to the warning by ${reactVerb}!`)
+	}
+
 	/**
 	 * Trigger win event
 	 */
@@ -196,6 +221,22 @@ class User {
 
 }
 
+class LineWorker extends User {
+	constructor(socket) {
+		super(socket);
+		this.warning = 'Points frantically to the right!';
+		this.reaction = 'jumping';
+	}
+}
+
+class GroundWorker extends User {
+	constructor(socket) {
+		super(socket);
+		this.warning = 'Yells to watch out for the power surge!';
+		this.reaction = 'jumping';
+	}
+}
+
 /**
  * Socket.IO on connect event
  * @param {Socket} socket
@@ -203,7 +244,12 @@ class User {
 module.exports = {
 
 	io: (socket) => {
-		const user = new User(socket);
+		let user;
+		if(users.length % 2 ===0) {
+			user = new LineWorker(socket);
+		} else {
+			user = new GroundWorker(socket);
+		}
 		users.push(user);
 		findOpponent(user);
 

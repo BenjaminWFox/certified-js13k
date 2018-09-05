@@ -58,6 +58,7 @@
 
         socket.on("start", () => {
             enableButtons();
+            console.log('start');
             setMessage("Round " + (points.win + points.lose + points.draw + 1));
         });
 
@@ -94,6 +95,11 @@
         socket.on("error", () => {
             disableButtons();
             setMessage("Connection error!");
+        });
+
+        socket.on("tick", (time) => {
+            console.log('tick');
+            setMessage(time);
         });
 
         for (let i = 0; i < buttons.length; i++) {

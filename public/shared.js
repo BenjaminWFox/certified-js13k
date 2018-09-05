@@ -1,6 +1,6 @@
 "use strict";
 
 const GUESS_NO = 0;
-const GUESS_ROCK = 1;
+const SENT_WARNING = 1;
 const GUESS_PAPER = 2;
-const GUESS_SCISSORS = 3;
+const REACTED_TO_WARNING = 3;
