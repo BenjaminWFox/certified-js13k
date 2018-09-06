@@ -19,6 +19,7 @@ body {
 .game {
     border-bottom: 1px #999 solid;
     height: 300px;
+    position: relative;
     width: 400px;
 }
 .status {
@@ -36,7 +37,6 @@ body {
     border-bottom: 1px #999 solid;
     display: inline-block;
     height: 50px;
-    margin-bottom: 5px;
     padding: 5px;
     width: 400px;
 }
@@ -44,6 +44,36 @@ body {
     height: 30px;
     padding: 5px;
     width: 100%;
+}
+.textblock {
+    font-size: 4em;
+    font-family: arial;
+    font-weight: bold;
+    height: 200px;
+    width: 100%;
+    background-color: #999;
+    padding: 50px 0;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.blue {
+    color: blue;
+}
+.red {
+    color: red;
+}
+.orange {
+    color: orange;
+}
+.yellow {
+    color: yellow;
+}
+.green {
+    color: green;
+}
+.white {
+    color: white;
 }
 </style>
 </head>
@@ -57,8 +87,8 @@ body {
     </div>
     <div id="timer"></div>
     <div id="message"></div>
-    <div class="game" style="text-align:center">
-
+    <div id="game" class="game" style="text-align:center">
+        
     </div>
     <div class="buttons">
         <button class="warn" data-action="warning">Send Warning</button>

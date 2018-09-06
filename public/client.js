@@ -8,6 +8,7 @@
         timer, //Timer element
         score, //Score element
         playerId,
+        minigame,
         playerJob,
         points = { //Game points
             draw: 0,
@@ -126,7 +127,7 @@
         })
 
         socket.on("msg", (payload) => {
-            setMessage(`I received a ${payload.type} from my partner that says ${payload.message}.`);
+            setMessage(`I received a ${payload.type} from my partner that says "${payload.message}."`);
         })
 
         socket.on("users", (usersStatus) => {
@@ -157,10 +158,90 @@
         message = document.getElementById("message");
         timer = document.getElementById("timer");
         score = document.getElementById("score");
+        minigame = document.getElementById("game");
         disableButtons();
         bind();
+        lineGame();
     }
 
     window.addEventListener("load", init, false);
+
+    function lineGame() {
+        const colors = ['red', 'orange', 'yellow', 'green', 'blue', 'white'];
+        const textBlock = document.createElement('div');
+        const answerLimit = 2000;
+        let hasChallenge = false;
+        let answer = undefined;
+        let spawnedAt = undefined;
+
+        textBlock.classList.add('textblock');
+        game.appendChild(textBlock);
+
+        window.onkeydown = function(e) {
+            const kc = e.keyCode;
+            console.log('kc', kc);
+            if(hasChallenge) {
+                if(answer === 'r' && kc === 82 || 
+                    answer === 'o' && kc === 79 ||
+                    answer === 'y' && kc === 89 ||
+                    answer === 'g' && kc === 71 ||
+                    answer === 'b' && kc === 66 ||
+                    answer === 'w' && kc === 87
+                ) {
+                    passChallenge();
+                    resetChallenge();
+                } else {
+                    failChallenge();
+                    resetChallenge();
+                }
+            }
+        }
+
+        spawnChallenge();
+
+        function resetChallenge() {
+            textBlock.innerHTML = '';
+            hasChallenge = false;
+            answer = undefined;
+            spawnedAt = undefined;
+        }
+
+        function passChallenge() {
+            console.log('PASSED THIS CHALLENGE');
+            textBlock.style.backgroundColor = 'green';
+        }
+
+        function failChallenge() {
+            console.log('FAILED THIS CHALLENGE');
+            textBlock.style.backgroundColor = 'red';
+        }
+
+        function spawnChallenge() {
+            const doSpawn = Math.floor(Math.random() * 50) + 1;
+            if(doSpawn === 25 && !hasChallenge) {
+                const idxText = Math.floor(Math.random() * 6);
+                let idxColor = idxText;
+
+                hasChallenge = true;
+                spawnedAt = Date.now();
+
+                textBlock.style.backgroundColor = '#999';
+
+                while(idxColor === idxText) {
+                    idxColor = Math.floor(Math.random() * 6);
+                }
+
+                answer = colors[idxColor].charAt(0);
+
+                textBlock.innerHTML = colors[idxText];
+                textBlock.style.color = colors[idxColor];
+            }
+            if(hasChallenge && spawnedAt + answerLimit < Date.now()) {
+                failChallenge();
+                resetChallenge();
+            }
+            setTimeout(spawnChallenge, 25);
+        }
+    }
 
 })();
