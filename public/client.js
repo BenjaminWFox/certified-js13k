@@ -112,11 +112,13 @@
             setTimer(time);
         });
 
-        socket.on("job", (jobInfo) => {
-            console.log('Got a job', jobInfo);
-            jobTitle = jobInfo.title;
-            jobType = jobInfo.type;
-        });
+        socket.on("gameon", () => {
+            if(playerJob.type === 'line') {
+                lineGame();
+            } else if (playerJob.type === 'ground') {
+                console.log('Ground game!');
+            }
+        })
 
         socket.on("hazard", (payload) => {
             setMessage(`Careful, a ${payload.type.name}`);
@@ -161,7 +163,6 @@
         minigame = document.getElementById("game");
         disableButtons();
         bind();
-        lineGame();
     }
 
     window.addEventListener("load", init, false);

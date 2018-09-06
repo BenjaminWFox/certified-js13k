@@ -121,6 +121,7 @@ class Game {
 
 	start() {
 		this.ticker = this.ticker ? this.ticker : setInterval(this.tick.bind(this), this.tickRate);
+		this.updateClients('gameon');
 	}
 
 	tick() {
