@@ -163,6 +163,7 @@
         minigame = document.getElementById("game");
         disableButtons();
         bind();
+        groundGame();
     }
 
     window.addEventListener("load", init, false);
@@ -240,6 +241,135 @@
             if(hasChallenge && spawnedAt + answerLimit < Date.now()) {
                 failChallenge();
                 resetChallenge();
+            }
+            setTimeout(spawnChallenge, 25);
+        }
+    }
+
+    function groundGame() {
+        const personImg = document.createElement('img');
+        const birdImg = document.createElement('img');
+        const surge = document.createElement('div');
+        surge.id = 'surge'
+
+        personImg.src = 'person.png';
+        birdImg.src = 'bird.png';
+        birdImg.draggable = false;
+
+        minigame.style.backgroundImage = 'url(/lines.png)';
+        minigame.style.cursor = 'crosshair';
+
+        minigame.appendChild(personImg);
+        minigame.appendChild(surge);
+
+        // game vars
+        let bird = undefined;
+        let surgeSpawned = false;
+        let surgeSpawnedAt = undefined;
+        
+        class Bird {
+            constructor(element, parent, reversed) {
+                this.element = element;
+                this.parent = parent;
+                this.left = 105;
+                this.scale = 1;
+                this.startTop = -13.5;
+                this.top = -13.5;
+                this.speed = -1;
+                this.targetX = 54;
+                this.targetTop = 20;
+                reversed ? this.reverse() : '';
+                this.setStyles();
+                this.append();
+                this.flyingAway = false;
+                this.hitTarget = false;
+                this.away = false;
+
+                this.element.addEventListener('click', (e) => {
+                    console.log('bird clicked!');
+                    this.flyingAway = true;
+                });
+            }
+
+            append() {
+                this.parent.appendChild(this.element);
+            }
+
+            move() {
+                if(!this.flyingAway) {
+                    if(this.scale === 1 && this.left > this.targetX ||
+                       this.scale === -1 && this.left < this.targetX) {
+                        this.left += this.speed;
+                        this.setLeft();
+                    }
+                    if(this.top < this.targetTop) {
+                        this.top += Math.abs(this.speed / 1.5);
+                        this.setTop();
+                    }
+                    if(this.top >= this.targetTop &&
+                       (this.scale === 1 && this.left <= this.targetX ||
+                       this.scale === -1 && this.left >= this.targetX)
+                    ) {
+                        this.hitTarget = true;
+                        this.flyingAway = true;
+                        console.log('Hit the target!!');
+                    }
+                }
+                if(this.flyingAway) {
+                    console.log('flying away');
+                    this.left += this.speed * 3;
+                    this.top -= Math.abs(this.speed) * 3;
+                    this.setLeft();
+                    this.setTop();
+                    if(this.top < this.startTop) {
+                        console.log('BIRD AWAY');
+                        this.away = true;
+                    }
+                }
+            }
+
+            reverse() {
+                this.targetX = 45;
+                this.top = -13;
+                this.speed = 1;
+                this.left = -5;
+                this.scale = -1;
+                this.setStyles();
+            }
+
+            setLeft() {
+                this.element.style.left = `${this.left}%`;
+            }
+
+            setTop() {
+                this.element.style.top = `${this.top}%`;
+            }
+
+            setStyles() {
+                this.element.style.position = 'absolute';
+                this.setTop();
+                this.setLeft();
+                this.element.style.transform = `translateX(-50%) scaleX(${this.scale})`;
+            }
+        }
+
+        function spawnBird() {
+            
+        }
+
+        spawnChallenge();
+
+        function spawnChallenge() {
+            const doSpawnBird = Math.floor(Math.random() * 50) + 1;
+            const doSpawnSurge = Math.floor(Math.random() * 50) + 1;
+            // the challenge!
+            if(bird && bird.away) {
+                bird = undefined;
+            }
+            if(!bird && doSpawnBird === 25) {
+                bird = new Bird(birdImg, minigame, Math.round(Math.random()));
+            } else if (bird) {
+                bird.move();
             }
             setTimeout(spawnChallenge, 25);
         }
