@@ -163,7 +163,6 @@
         minigame = document.getElementById("game");
         disableButtons();
         bind();
-        lineGame();
     }
 
     window.addEventListener("load", init, false);
