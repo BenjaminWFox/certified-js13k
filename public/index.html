@@ -57,6 +57,7 @@ body {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
+    z-index: 5;
 }
 .blue {
     color: blue;
@@ -106,6 +107,34 @@ body {
     top: 0;
     position: absolute;
 }
+.trainwarning {
+    position: absolute;
+    width: 400px;
+    height: 300px;
+    top: 0;
+    right: -90px;
+    transform: rotateZ(90deg);
+    transform-origin: center center;
+    z-index: 10;
+}
+.arc {
+    position: relative;
+    opacity: 0;
+}
+.arc1 {
+    font-size: 2em;
+    transform: scale(4);
+}
+.arc2 {
+    font-size: 3em;
+    transform: scale(5);
+    top: -55px;
+}
+.arc3 {
+    font-size: 4em;
+    transform: scale(6);
+    top: -125px;
+}
 </style>
 </head>
 <body>
@@ -119,7 +148,6 @@ body {
     <div id="timer"></div>
     <div id="message"></div>
     <div id="game" class="game" style="text-align:center">
-        
     </div>
     <div class="buttons">
         <button class="warn" data-action="warning">Send Warning</button>

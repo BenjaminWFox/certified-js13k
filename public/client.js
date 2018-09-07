@@ -163,20 +163,37 @@
         minigame = document.getElementById("game");
         disableButtons();
         bind();
+        lineGame();
     }
 
     window.addEventListener("load", init, false);
 
     function lineGame() {
         const colors = ['red', 'orange', 'yellow', 'green', 'blue', 'white'];
+        const trainNoiseEl = document.createElement('div');
+        const arc1 = document.createElement('div');
+        const arc2 = document.createElement('div');
+        const arc3 = document.createElement('div');
         const textBlock = document.createElement('div');
         const answerLimit = 2000;
         let hasChallenge = false;
+        let train = undefined;
         let answer = undefined;
         let spawnedAt = undefined;
 
         textBlock.classList.add('textblock');
         game.appendChild(textBlock);
+
+        trainNoiseEl.classList.add('trainwarning');
+        arc1.classList.add('arc', 'arc1');
+        arc2.classList.add('arc', 'arc2');
+        arc3.classList.add('arc', 'arc3');
+        arc1.innerHTML = '&#9697;';
+        arc2.innerHTML = '&#9697;';
+        arc3.innerHTML = '&#9697;';
+        trainNoiseEl.appendChild(arc1);
+        trainNoiseEl.appendChild(arc2);
+        trainNoiseEl.appendChild(arc3);
 
         window.onkeydown = function(e) {
             const kc = e.keyCode;
@@ -196,6 +213,50 @@
                     resetChallenge();
                 }
             }
+        }
+
+        class Train {
+            constructor(element, parent) {
+                this.element = element;
+                this.parent = parent;
+                this.spawnedAt = Date.now();
+                this.a1 = this.element.childNodes[0]
+                this.a2 = this.element.childNodes[1]
+                this.a3 = this.element.childNodes[2]
+                this.arcs = [this.a1, this.a2, this.a3];
+                this.allVisible = false;
+
+                console.log(this.element.childNodes);
+
+                this.append();
+            }
+
+            append() {
+                this.parent.appendChild(this.element);
+            }
+
+            delete() {
+                this.arcs.forEach(arc => {
+                    arc.style.opacity = 0;
+                })
+                this.parent.removeChild(this.element);
+            }
+
+            move() {
+                let processedArcs = 0
+                for(let i=0;i<this.arcs.length;i++) {
+                    if(this.arcs[i].style.opacity < 1) {
+                        this.arcs[i].style.opacity = Number(this.arcs[i].style.opacity) + .02;
+                        break;
+                    }
+                    ++processedArcs;
+                }
+                if(!this.allvisible && processedArcs === this.arcs.length) {
+                    console.log('ALL VISIBLE');
+                    this.allVisible = true;
+                }
+            }
+
         }
 
         spawnChallenge();
@@ -218,8 +279,9 @@
         }
 
         function spawnChallenge() {
-            const doSpawn = Math.floor(Math.random() * 50) + 1;
-            if(doSpawn === 25 && !hasChallenge) {
+            const doSpawnText = Math.floor(Math.random() * 50) + 1;
+            const doSpawnTrain = Math.floor(Math.random() * 100) + 1;
+            if(doSpawnText === 25 && !hasChallenge) {
                 const idxText = Math.floor(Math.random() * 6);
                 let idxColor = idxText;
 
@@ -240,6 +302,17 @@
             if(hasChallenge && spawnedAt + answerLimit < Date.now()) {
                 failChallenge();
                 resetChallenge();
+            }
+            if(!train && doSpawnTrain === 50) {
+                console.log('Make train!');
+                train = new Train(trainNoiseEl, minigame);
+            } else if (train) {
+                train.move();
+                if(train.allVisible) {
+                    console.log('OH NOT TRAIN IS HERE!', train);
+                    train.delete();
+                    train = undefined;
+                }
             }
             setTimeout(spawnChallenge, 25);
         }
@@ -392,8 +465,6 @@
             setLeft() {
                 this.element.style.left = `${this.left}px`
             }
-
-
        }
 
         spawnChallenge();
