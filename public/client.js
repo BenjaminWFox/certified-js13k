@@ -218,6 +218,7 @@
         class Train {
             constructor(element, parent) {
                 this.element = element;
+                this.element.style.visibility = 'visible';
                 this.parent = parent;
                 this.spawnedAt = Date.now();
                 this.a1 = this.element.childNodes[0]
@@ -225,6 +226,9 @@
                 this.a3 = this.element.childNodes[2]
                 this.arcs = [this.a1, this.a2, this.a3];
                 this.allVisible = false;
+                this.finished = false;
+                this.endPause = 1000;
+                this.visible = false;
 
                 console.log(this.element.childNodes);
 
@@ -254,6 +258,19 @@
                 if(!this.allvisible && processedArcs === this.arcs.length) {
                     console.log('ALL VISIBLE');
                     this.allVisible = true;
+                }
+                if(this.allVisible) {
+                    this.endPause -= 25;
+                    if(this.visible) {
+                        this.element.style.visibility = 'hidden';
+                        this.visible = false;
+                    } else {
+                        this.element.style.visibility = 'visible';
+                        this.visible = true;
+                    }
+                }
+                if(this.endPause === 0) {
+                    this.finished = true;
                 }
             }
 
@@ -308,7 +325,7 @@
                 train = new Train(trainNoiseEl, minigame);
             } else if (train) {
                 train.move();
-                if(train.allVisible) {
+                if(train.finished) {
                     console.log('OH NOT TRAIN IS HERE!', train);
                     train.delete();
                     train = undefined;
