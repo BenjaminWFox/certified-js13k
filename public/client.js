@@ -14,27 +14,45 @@
         hazardResponse,
         messageResponse,
         avoidedResponse,
-        gameOverResponse;
+        gameOverResponse,
+        groundInstructions,
+        lineInstructions,
+        // These may be used to limit warnings/reactions
+        // Not implemented
+        canWarn = true,
+        canReact = true;
     const readyButton = document.getElementById('readybtn');
     const warnButton = document.getElementById('warnbtn');
     const reactButton = document.getElementById('reactbtn');
+    const endMessage = document.getElementById('endmessage');
 
-    /**
-     * Disable all button
-     */
     function disableButtons() {
-        for (let i = 0; i < buttons.length; i++) {
-            buttons[i].setAttribute("disabled", "disabled");
-        }
+        disableGameButtons();
+        disableReadyButton();
     }
 
     /**
-     * Enable all button
+     * Disable game button
      */
-    function enableButtons() {
-        for (let i = 0; i < buttons.length; i++) {
-            buttons[i].removeAttribute("disabled");
-        }
+    function disableGameButtons() {
+        warnButton.setAttribute('disabled', 'disabled');
+        reactButton.setAttribute('disabled', 'disabled');
+    }
+
+    /**
+     * Enable game button
+     */
+    function enableGameButtons() {
+        warnButton.removeAttribute('disabled', 'disabled');
+        reactButton.removeAttribute('disabled', 'disabled');
+    }
+
+    function disableReadyButton() {
+        readyButton.setAttribute('disabled', 'disabled');
+    }
+
+    function enableReadyButton() {
+        readyButton.removeAttribute('disabled');
     }
 
     /**
@@ -52,10 +70,39 @@
     function clearGameboard() {
         console.log('CLEAR GAMEBOARD');
         timer.innerHTML = '';
-
+        minigame.style.backgroundImage = '';
         while (minigame.firstChild) {
             console.log('Clearing', minigame.firstChild);
             minigame.removeChild(minigame.firstChild);
+        }
+    }
+
+    function setEndMessage(msg) {
+        endMessage.style.display = 'block';
+        endMessage.innerHTML = msg;
+        setTimeout(() => {
+            clearEndMessage();
+        }, 5000);
+    }
+
+    function clearEndMessage() {
+        endMessage.style.display = 'none';
+        endMessage.innerHTML = '';
+    }
+
+    function showInstructions() {
+        console.log('Showing instructions!!');
+        groundInstructions = document.getElementById('groundinstructions').cloneNode(true);
+        lineInstructions = document.getElementById('lineinstructions').cloneNode(true);
+        if(playerJob.type === 'line') {
+            lineInstructions.style.display = 'block';
+            groundInstructions.style.display = 'none';
+            minigame.appendChild(lineInstructions);
+        }
+        if(playerJob.type === 'ground') {
+            groundInstructions.style.display = 'block';
+            lineInstructions.style.display = 'none';
+            minigame.appendChild(groundInstructions);
         }
     }
 
@@ -65,25 +112,30 @@
     function bind() {
 
         socket.on("start", (playerInfo) => {
-            enableButtons();
+            enableReadyButton();
             playerId = playerInfo.id;
             playerJob = playerInfo.job;
+            clearGameboard();
+            showInstructions();
             console.log('start', playerId, playerJob.title);
             setMessage("Waiting for players to ready up.");
         });
 
         socket.on("end", () => {
+            console.log('END HAS HAPPENED');
             disableButtons();
             setMessage("Waiting for opponent...");
         });
 
         socket.on("connect", () => {
             disableButtons();
+            clearGameboard();
             setMessage("Waiting for opponent...");
         });
 
         socket.on("disconnect", () => {
             disableButtons();
+            clearGameboard()
             setMessage("Connection lost!");
         });
 
@@ -93,28 +145,34 @@
         });
 
         socket.on("tick", (time) => {
-            console.log('TICK!');
             setTimer(time);
         });
 
         socket.on("gameon", () => {
+            console.log('GAME ON!!');
+            clearEndMessage();
+            disableReadyButton();
+            enableGameButtons();
             if(playerJob.type === 'line') {
+                lineInstructions.style.display = 'none';
                 lineGame();
             } else if (playerJob.type === 'ground') {
+                groundInstructions.style.display = 'none';
                 groundGame();
             }
         });
 
         socket.on("users", (usersStatus) => {
             let id = 1;
-            console.log('Got user info', usersStatus);
+            // console.log('Got user info', usersStatus);
             usersStatus.forEach(status => {
-                document.getElementById(`user${id}`).innerHTML = `Player${id} ${id === playerId ? `(you) ${playerJob.type.toUpperCase()}` : ''} is ${status ? 'ready' : 'not ready'}`;
+                document.getElementById(`user${id}`).innerHTML = `Player${id} ${id === playerId ? `(you)` : ''} is ${status ? 'ready' : 'not ready'}`;
                 console.log(id, playerId, status);
                 if(id === playerId && status) {
                     console.log('Update button');
                     readyButton.style.backgroundColor = '#b5ffb4';
                     readyButton.innerHTML = 'Ready!';
+                    disableReadyButton();
                 } else if (id === playerId && !status) {
                     readyButton.style.backgroundColor = '#ffb4b4';
                     readyButton.innerHTML = 'Ready?';
@@ -137,8 +195,16 @@
             avoidedResponse(payload);
         })
 
-        socket.on("gameover", () => {
+        socket.on("lose", (hazardinfo) => {
             gameOverResponse();
+            console.log('hazardinfo', hazardinfo);
+            setEndMessage(`Ouch, it's going to take some time to recover from that ${hazardinfo.type.name}.`)
+        })
+
+        socket.on("won", () => {
+            console.log('We won!!');
+            gameOverResponse();
+            setEndMessage('Well done, you won!');
         })
 
         readyButton.addEventListener("click", function (e) {
@@ -148,13 +214,19 @@
 
         warnButton.addEventListener("click", function (e) {
             console.log('Client button cliecked:', warnButton.dataset.action);
-            socket.emit('action', warnButton.dataset.action);
+            if(canWarn) {
+                socket.emit('action', warnButton.dataset.action);
+                // canWarn = false;
+            }
         }, false);
 
         reactButton.addEventListener("click", function (e) {
             console.log('reactButton clicked')
-            socket.emit('action', reactButton.dataset.action);
-            reactMethod();
+            if(canReact) {
+                socket.emit('action', reactButton.dataset.action);
+                reactMethod();
+                // canReact = false;
+            }
         }, false);
     }
 
@@ -349,13 +421,13 @@
         }
 
         function passChallenge() {
-            console.log('PASSED THIS CHALLENGE');
+            // console.log('PASSED THIS CHALLENGE');
             textBlock.style.backgroundColor = 'green';
         }
 
         function failChallenge() {
             // Send message to server here, increment timer
-            console.log('FAILED THIS CHALLENGE');
+            // console.log('FAILED THIS CHALLENGE');
             socket.emit('minifail');
             textBlock.style.backgroundColor = 'red';
         }
@@ -421,7 +493,7 @@
             }
         }
         gameOverResponse = function() {
-            setMessage(`Game Over! Too Bad!`);
+            setMessage(`Game Over!`);
             
             clearTimeout(scTimeout);
 
@@ -515,7 +587,7 @@
             }
 
             showThanks() {
-                this.messageEl.innerHTML = 'Fixed it! Thanks!!';
+                this.messageEl.innerHTML = '&lt; Surge gone! Re-routed! &gt;';
                 this.messageEl.style.visibility = 'visible';
 
                 setTimeout(this.hideMessage.bind(this), 2000);
@@ -597,17 +669,17 @@
                         this.hitTarget = true;
                         this.flyingAway = true;
                         socket.emit('minifail');
-                        console.log('Hit the target!!');
+                        // console.log('Hit the target!!');
                     }
                 }
                 if(this.flyingAway) {
-                    console.log('flying away');
+                    // console.log('flying away');
                     this.left += this.speed * 3;
                     this.top -= Math.abs(this.speed) * 3;
                     this.setLeft();
                     this.setTop();
                     if(this.top < this.startTop) {
-                        console.log('BIRD AWAY');
+                        // console.log('BIRD AWAY');
                         this.away = true;
                     }
                 }

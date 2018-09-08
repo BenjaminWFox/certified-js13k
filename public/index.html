@@ -9,6 +9,7 @@ html * {
 }
 body {
     background-color: #000;
+    font-family: Arial;
     text-align: center;
 }
 .wrapper {
@@ -43,6 +44,7 @@ body {
 #message {
     border-bottom: 1px #999 solid;
     display: inline-block;
+    font-size: 1.15em;
     height: 50px;
     padding: 5px;
     width: 400px;
@@ -54,7 +56,6 @@ body {
 }
 .textblock {
     font-size: 4em;
-    font-family: arial;
     font-weight: bold;
     height: 200px;
     width: 100%;
@@ -136,7 +137,8 @@ body {
 }
 .linemessage {
     position: absolute;
-    left: 45px;
+    font-size: .75em;
+    left: 25px;
     top: 99px;
     border: 1px #000 solid;
     border-radius: 10px;
@@ -198,6 +200,26 @@ body {
     font-size: 1.15em;
     background-color: #ffb4b4;
 }
+.instructions {
+    text-align: left;
+    display: none;
+    padding: 0px 8px;
+    margin-top: -5px;
+    font-size:.9em;
+}
+#endmessage {
+    background-color: #fff;
+    border: 1px #000 solid;
+    display: none;
+    padding: 30px;
+    font-size: 1.75em;
+    position: absolute;
+    left: 50%;
+    top: 40%;
+    transform: translate(-50%, -50%);
+    min-width: 80%;
+    min-height: 30%;
+}
 </style>
 </head>
 <body>
@@ -211,7 +233,8 @@ body {
     <div id="timer"></div>
     <div id="message"></div>
     <div class="gamewindow">
-        <div id="game" class="game" style="text-align:center">
+        <div id="game" class="game">
+            
         </div>
     </div>
     <div class="buttons">
@@ -219,6 +242,35 @@ body {
         <button id="reactbtn" class="actionbutton react" data-action="reaction">React to Warning</button>
     </div>
 
+</div>
+<div id="groundinstructions" class="instructions">
+    <p>You are the <em><strong>GROUND</strong></em> worker! Work with your partner to fix the powerline. It should only take a minute, but small mistakes add up, and big ones send you to the hospital!</p>
+    <p>Your job is to:</p>
+    <ul>
+        <li>Keep the birds off the line worker with your BB gun. (shoot w/ mouse)</li>
+        <li>Warn the line worker of incoming power surges. (watch for surges on the lower line!)</li>
+    </ul>
+    <p>You need to watch out for:</p>
+    <ul>
+        <li>The line worker warning you of oncoming trains. React too slow and its game-over!</li>
+        <li>Not shooting the line worker in the head. It's just BBs, but it hurts and adds to the timer!</li>
+    </ul>
+</div>
+<div id="lineinstructions" class="instructions">
+    <p>You are the <em><strong>LINE</strong></em> worker! Work with your partner to fix the powerline. It should only take a minute, but small mistakes add up, and big ones send you to the hospital!</p>
+    <p>Your job is to:</p>
+    <ul>
+        <li>Fix wires by typing the first letter of the <strong>color</strong> of the word shown. (use keybaord)</li>
+        <li>Send warning to the ground worker of oncoming trains. (watch for sound waves on the right!)</li>
+    </ul>
+    <p>You need to watch out for:</p>
+    <ul>
+        <li>The ground worker warning you of incoming surges. React too slow and its game-over!</li>
+        <li>Mis-identifying the colors! It adds to the timer!</li>
+    </ul>
+</div>
+<div id="endmessage">
+    
 </div>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/shared.js"></script>

@@ -172,8 +172,7 @@ class Game {
 			if(this.activeHazard.spawnedAt + this.activeHazard.reactionCutoff < Date.now() && !this.activeHazard.reactedAt ||
 				this.activeHazard.reactedAt && this.activeHazard.spawnedAt + this.activeHazard.reactionCutoff < this.activeHazard.reactedAt) {
 				console.log('GAME OVER');
-				this.updateClients('gameover');
-				this.end();
+				this.loseGame();
 			}
 		}
 	}
@@ -219,6 +218,7 @@ class Game {
 
 	timeUp() {
 		console.log('TIME IS UP');
+		this.winGame();
 		// This is the win condition. If time is 0 players were successful.
 	}
 
@@ -226,19 +226,23 @@ class Game {
 
 	}
 
+	winGame() {
+		console.log('Time is up, you win!');
+		this.updateClients('won', '');
+		this.end();
+	}
+
+	loseGame() {
+		console.log('Sorry, you lost!');
+		this.updateClients('lose', this.activeHazard);
+		this.end();
+	}
+
 	end() {
 		console.log('Ending game', this.startTime);
 		this.gameActive = false;
 		clearInterval(this.ticker);
 		makeNewGameSameUsers(this.user1, this.user2);
-	}
-
-	/**
-	 * Is game ended
-	 * @return {boolean}
-	 */
-	ended() {
-		// return this.user1.guess !== GUESS_NO && this.user2.guess !== GUESS_NO;
 	}
 
 	/**
