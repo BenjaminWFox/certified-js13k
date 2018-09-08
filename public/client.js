@@ -20,7 +20,9 @@
         // These may be used to limit warnings/reactions
         // Not implemented
         canWarn = true,
-        canReact = true;
+        canReact = true,
+        lineKeyDownFn,
+        groundKeyDownFn;
     const readyButton = document.getElementById('readybtn');
     const warnButton = document.getElementById('warnbtn');
     const reactButton = document.getElementById('reactbtn');
@@ -117,6 +119,10 @@
             playerJob = playerInfo.job;
             clearGameboard();
             showInstructions();
+            if (playerJob.type === 'ground') {
+                warnButton.innerHTML = 'Send Warning (z)';
+                reactButton.innerHTML = 'React to Warning (b)';
+            }
             console.log('start', playerId, playerJob.title);
             setMessage("Waiting for players to ready up.");
         });
@@ -161,6 +167,17 @@
                 groundGame();
             }
         });
+
+        function keySwitch(e) {
+            if(playerJob.type === 'line') {
+                lineKeyDownFn(e);
+            }
+            if(playerJob.type === 'ground') {
+                groundKeyDownFn(e);
+            }
+        }
+
+        window.addEventListener('keydown', keySwitch);
 
         socket.on("users", (usersStatus) => {
             let id = 1;
@@ -283,7 +300,7 @@
         trainNoiseEl.appendChild(arc2);
         trainNoiseEl.appendChild(arc3);
 
-        window.onkeydown = function(e) {
+        lineKeyDownFn = function(e) {
             const kc = e.keyCode;
             console.log('kc', kc);
             if(hasChallenge && minigameEnabled) {
@@ -539,6 +556,23 @@
             console.log('Ow! You shot me you miserable dingus!');
         });
         headTarget.id = 'headtarget';
+
+        groundKeyDownFn = function(e) {
+            const kc = e.keyCode;
+            console.log('kc', kc);
+            if(kc === 90) { // z
+                if(!warnButton.disabled) {
+                    socket.emit('action', warnButton.dataset.action);
+                }
+            }
+            if(kc === 66) { // b
+                if(!reactButton.disabled) {
+                    socket.emit('action', reactButton.dataset.action);
+                    reactMethod();
+                }
+            }
+        }
+
 
         function groundMinifail() {
             exclamations.style.display = 'block';
