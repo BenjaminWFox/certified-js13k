@@ -142,7 +142,7 @@ class Game {
 			clearInterval(this.ticker);
 			this.timeUp();
 		} else {
-			// this.runHazardSpawner();
+			this.runHazardSpawner();
 			this.checkForHazardDeath();
 		}
 		if(this.gameActive) {
