@@ -6,7 +6,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "mocha test"
+    "test": "mocha test",
+    "build": "webpack"
   },
   "keywords": [
     "js13kgames",
@@ -28,6 +29,11 @@
     "sqlite3": "^4.0.1"
   },
   "devDependencies": {
-    "mocha": "^5.2.0"
+    "copy-webpack-plugin": "^4.5.2",
+    "html-webpack-plugin": "^3.2.0",
+    "mocha": "^5.2.0",
+    "uglifyjs-webpack-plugin": "^1.3.0",
+    "webpack": "^4.17.2",
+    "webpack-cli": "^3.1.0"
   }
 }
