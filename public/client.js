@@ -445,7 +445,7 @@
             const doSpawnText = Math.floor(Math.random() * 75) + 1;
             
             if(doSpawnText === 25 && !hasChallenge) {
-                const idxText = Math.floor(Math.random() * 6);
+                const idxText = Math.floor(Math.random() * colors.length);
                 let idxColor = idxText;
 
                 hasChallenge = true;
@@ -454,7 +454,7 @@
                 textBlock.style.backgroundColor = '#999';
 
                 while(idxColor === idxText) {
-                    idxColor = Math.floor(Math.random() * 6);
+                    idxColor = Math.floor(Math.random() * colors.length);
                 }
 
                 answer = colors[idxColor].charAt(0);
