@@ -259,7 +259,7 @@
         const arc2 = document.createElement('div');
         const arc3 = document.createElement('div');
         const textBlock = document.createElement('div');
-        const doh = document.getElementById('doh');
+        const doh = document.getElementById('doh').cloneNode(true);
         const answerLimit = 1500;
         let hasChallenge = false;
         let train = undefined;
@@ -269,7 +269,8 @@
 
         textBlock.classList.add('textblock');
         messageFromGround.classList.add('groundmessage');
-        game.appendChild(textBlock);
+        minigame.appendChild(textBlock);
+        minigame.appendChild(doh);
 
         trainNoiseEl.classList.add('trainwarning');
         arc1.classList.add('arc', 'arc1');
@@ -529,7 +530,7 @@
         const surgeEl = document.createElement('div');
         const headTarget = document.createElement('div');
         const messageFromLine = document.createElement('div');
-        const exclamations = document.getElementById('exclamations');
+        const exclamations = document.getElementById('exclamations').cloneNode(true);
         messageFromLine.classList.add('linemessage');
 
         headTarget.addEventListener('click', function(){
@@ -629,6 +630,7 @@
 
         minigame.appendChild(personImg);
         minigame.appendChild(headTarget);
+        minigame.appendChild(exclamations);
 
         // game vars
         let bird = undefined;

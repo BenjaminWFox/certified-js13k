@@ -110,7 +110,8 @@ class Game {
 		this.user2 = user2;
 		this.users = [this.user1, this.user2];
 		this.startTime = Date.now();
-		this.clockTotal = 60000;
+		this.clockStart = 60000;
+		this.clockTotal = this.clockStart;
 		this.remainingTime = this.clockTotal;
 		this.tickRate = 50;
 		this.ticker = undefined;
@@ -241,6 +242,7 @@ class Game {
 	end() {
 		console.log('Ending game', this.startTime);
 		this.gameActive = false;
+		// this.clockTotal = this.clockStart;
 		clearInterval(this.ticker);
 		makeNewGameSameUsers(this.user1, this.user2);
 	}
