@@ -50,6 +50,7 @@
     }
 
     function clearGameboard() {
+        console.log('CLEAR GAMEBOARD');
         timer.innerHTML = '';
 
         while (minigame.firstChild) {
@@ -92,6 +93,7 @@
         });
 
         socket.on("tick", (time) => {
+            console.log('TICK!');
             setTimer(time);
         });
 
@@ -108,6 +110,15 @@
             console.log('Got user info', usersStatus);
             usersStatus.forEach(status => {
                 document.getElementById(`user${id}`).innerHTML = `Player${id} ${id === playerId ? `(you) ${playerJob.type.toUpperCase()}` : ''} is ${status ? 'ready' : 'not ready'}`;
+                console.log(id, playerId, status);
+                if(id === playerId && status) {
+                    console.log('Update button');
+                    readyButton.style.backgroundColor = '#b5ffb4';
+                    readyButton.innerHTML = 'Ready!';
+                } else if (id === playerId && !status) {
+                    readyButton.style.backgroundColor = '#ffb4b4';
+                    readyButton.innerHTML = 'Ready?';
+                }
                 ++id;
             });
         });
@@ -345,12 +356,12 @@
         function failChallenge() {
             // Send message to server here, increment timer
             console.log('FAILED THIS CHALLENGE');
+            socket.emit('minifail');
             textBlock.style.backgroundColor = 'red';
         }
 
         function spawnChallenge() {
             const doSpawnText = Math.floor(Math.random() * 75) + 1;
-            // const doSpawnTrain = Math.floor(Math.random() * 100) + 1;
             
             if(doSpawnText === 25 && !hasChallenge) {
                 const idxText = Math.floor(Math.random() * 6);
@@ -377,12 +388,8 @@
 
             if (train) {
                 train.move();
-                // if(train.finished) {
-                //     console.log('OH NOT TRAIN IS HERE!', train);
-                //     train.delete();
-                //     train = undefined;
-                // }
             }
+
             scTimeout = setTimeout(spawnChallenge, 25);
         }
 
@@ -446,6 +453,7 @@
 
         headTarget.addEventListener('click', function(){
             // Send message to server here, increment timer
+            socket.emit('minifail');
             console.log('Ow! You shot me you miserable dingus!');
         });
         headTarget.id = 'headtarget';
@@ -533,7 +541,6 @@
 
         minigame.appendChild(personImg);
         minigame.appendChild(headTarget);
-        // minigame.appendChild(surge);
 
         // game vars
         let bird = undefined;
@@ -589,6 +596,7 @@
                     ) {
                         this.hitTarget = true;
                         this.flyingAway = true;
+                        socket.emit('minifail');
                         console.log('Hit the target!!');
                     }
                 }
@@ -671,7 +679,6 @@
 
         function spawnChallenge() {
             const doSpawnBird = Math.floor(Math.random() * 50) + 1;
-            // const doSpawnSurge = Math.floor(Math.random() * 100) + 1;
             
             // the challenge!
             if(bird && bird.away) {

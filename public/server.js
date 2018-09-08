@@ -115,6 +115,7 @@ class Game {
 		this.tickRate = 50;
 		this.ticker = undefined;
 		this.activeHazard = null;
+		this.gameActive = false;
 		console.log('Constructed a new game. ST:', this.startTime);
 	}
 
@@ -129,6 +130,7 @@ class Game {
 	}
 
 	start() {
+		this.gameActive = true;
 		this.ticker = this.ticker ? this.ticker : setInterval(this.tick.bind(this), this.tickRate);
 		this.updateClients('gameon');
 	}
@@ -143,8 +145,10 @@ class Game {
 			this.runHazardSpawner();
 			this.checkForHazardDeath();
 		}
-		this.remainingTime = (this.clockTotal).toTime();
-		this.updateClients('tick', this.remainingTime);
+		if(this.gameActive) {
+			this.remainingTime = (this.clockTotal).toTime();
+			this.updateClients('tick', this.remainingTime);
+		}
 	}
 
 	runHazardSpawner() {
@@ -224,6 +228,7 @@ class Game {
 
 	end() {
 		console.log('Ending game', this.startTime);
+		this.gameActive = false;
 		clearInterval(this.ticker);
 		makeNewGameSameUsers(this.user1, this.user2);
 	}
@@ -390,6 +395,17 @@ module.exports = {
 			// 		storage.set('games', games + 1);
 			// 	});
 			// }
+		});
+
+		socket.on('minifail', () => {
+			console.log('Minifail!');
+			if(user && user.game) {
+				try {
+					user.game.clockTotal += 2000;
+				} catch (err) {
+					console.log('The game instance has shut down');
+				}
+			}
 		});
 
 		console.log("Connected: " + socket.id);
