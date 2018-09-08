@@ -196,13 +196,15 @@
         })
 
         socket.on("lose", (hazardinfo) => {
+            console.log('We lost!!');
+            disableGameButtons();
             gameOverResponse();
-            console.log('hazardinfo', hazardinfo);
             setEndMessage(`Ouch, it's going to take some time to recover from that ${hazardinfo.type.name}.`)
         })
 
         socket.on("won", () => {
             console.log('We won!!');
+            disableGameButtons();
             gameOverResponse();
             setEndMessage('Well done, you won!');
         })
@@ -578,7 +580,6 @@
                         self.unWave();
                     }
                 }, 50)
-
             }
 
             unWave() {
