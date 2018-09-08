@@ -6,15 +6,13 @@
         buttons, //Button elements
         message, //Message element
         timer, //Timer element
-        score, //Score element
         playerId,
         minigame,
         playerJob,
-        points = { //Game points
-            draw: 0,
-            win: 0,
-            lose: 0
-        };
+        reactMethod;
+    const readyButton = document.getElementById('readybtn');
+    const warnButton = document.getElementById('warnbtn');
+    const reactButton = document.getElementById('reactbtn');
 
     /**
      * Disable all button
@@ -46,17 +44,13 @@
         timer.innerHTML = text;
     }
 
-    /**
-     * Set score text
-     * @param {string} text
-     */
-    function displayScore(text) {
-        score.innerHTML = [
-            "<h2>" + text + "</h2>",
-            "Won: " + points.win,
-            "Lost: " + points.lose,
-            "Draw: " + points.draw
-        ].join("<br>");
+    function clearGameboard() {
+        timer.innerHTML = '';
+
+        while (minigame.firstChild) {
+            console.log('Clearing', minigame.firstChild);
+            minigame.removeChild(minigame.firstChild);
+        }
     }
 
     /**
@@ -70,21 +64,6 @@
             playerJob = playerInfo.job;
             console.log('start', playerId, playerJob.title);
             setMessage("Waiting for players to ready up.");
-        });
-
-        socket.on("win", () => {
-            points.win++;
-            displayScore("You win!");
-        });
-
-        socket.on("lose", () => {
-            points.lose++;
-            displayScore("You lose!");
-        });
-
-        socket.on("draw", () => {
-            points.draw++;
-            displayScore("Draw!");
         });
 
         socket.on("end", () => {
@@ -108,7 +87,6 @@
         });
 
         socket.on("tick", (time) => {
-            console.log('tick');
             setTimer(time);
         });
 
@@ -120,18 +98,6 @@
             }
         });
 
-        socket.on("hazard", (payload) => {
-            setMessage(`Careful, a ${payload.type.name}`);
-        })
-
-        socket.on("avoided", (payload) => {
-            setMessage(`Nice, hazard avoided!`);
-        })
-
-        socket.on("msg", (payload) => {
-            setMessage(`I received a ${payload.type} from my partner that says "${payload.message}."`);
-        })
-
         socket.on("users", (usersStatus) => {
             let id = 1;
             console.log('Got user info', usersStatus);
@@ -141,28 +107,32 @@
             });
         });
 
-        for (let i = 0; i < buttons.length; i++) {
-            ((button, guess) => {
-                button.addEventListener("click", function (e) {
-                    console.log('Client button cliecked:', button.dataset.action);
-                    socket.emit('action', button.dataset.action);
-                }, false);
-            })(buttons[i], i + 1);
-        }
+        readyButton.addEventListener("click", function (e) {
+            console.log('Client button cliecked:', readyButton.dataset.action);
+            socket.emit('action', readyButton.dataset.action);
+        }, false);
+
+        warnButton.addEventListener("click", function (e) {
+            console.log('Client button cliecked:', warnButton.dataset.action);
+            socket.emit('action', warnButton.dataset.action);
+        }, false);
+
     }
 
     /**
      * Client module init
      */
     function init() {
-        socket = io({ upgrade: false, transports: ["websocket"] });
+        console.log('INIT & BIND');
+        socket = socket || io({ upgrade: false, transports: ["websocket"] });
         buttons = document.getElementsByTagName("button");
         message = document.getElementById("message");
         timer = document.getElementById("timer");
-        score = document.getElementById("score");
         minigame = document.getElementById("game");
         disableButtons();
+        console.log('socket.on', socket);
         bind();
+        console.log('socket.on', socket);
     }
 
     window.addEventListener("load", init, false);
@@ -170,6 +140,7 @@
     function lineGame() {
         const colors = ['red', 'orange', 'yellow', 'green', 'blue', 'white'];
         const trainNoiseEl = document.createElement('div');
+        const messageFromGround = document.createElement('div');
         const arc1 = document.createElement('div');
         const arc2 = document.createElement('div');
         const arc3 = document.createElement('div');
@@ -179,8 +150,10 @@
         let train = undefined;
         let answer = undefined;
         let spawnedAt = undefined;
+        let minigameEnabled = true;
 
         textBlock.classList.add('textblock');
+        messageFromGround.classList.add('groundmessage');
         game.appendChild(textBlock);
 
         trainNoiseEl.classList.add('trainwarning');
@@ -197,7 +170,7 @@
         window.onkeydown = function(e) {
             const kc = e.keyCode;
             console.log('kc', kc);
-            if(hasChallenge) {
+            if(hasChallenge && minigameEnabled) {
                 if(answer === 'r' && kc === 82 || 
                     answer === 'o' && kc === 79 ||
                     answer === 'y' && kc === 89 ||
@@ -211,6 +184,47 @@
                     failChallenge();
                     resetChallenge();
                 }
+            }
+        }
+
+        class LineAnimations {
+            constructor(element, parent) {
+                this.element = element;
+                this.parent = parent;
+                this.append();
+            }
+
+            append() {
+                this.parent.appendChild(this.element);
+            }
+
+            disableMinigame() {
+                minigameEnabled = false;
+                textBlock.style.opacity = .25;
+                setTimeout(this.enableMinigame.bind(this), 2000);
+            }
+
+            enableMinigame() {
+                minigameEnabled = true;
+                textBlock.style.opacity = 1;
+            }
+
+            showWarning() {
+                this.element.innerHTML = 'Watch Out! Surge Incoming!!';
+                this.element.style.visibility = 'visible';
+
+                setTimeout(this.hideMessage.bind(this), 2000);
+            }
+
+            showThanks() {
+                this.element.innerHTML = 'Close call on that train, thanks!';
+                this.element.style.visibility = 'visible';
+
+                setTimeout(this.hideMessage.bind(this), 2000);
+            }
+
+            hideMessage() {
+                this.element.style.visibility = 'hidden';
             }
         }
 
@@ -231,7 +245,15 @@
 
                 console.log(this.element.childNodes);
 
+                this.setStyles();
                 this.append();
+            }
+
+            setStyles() {
+                // this.element.style.visibility = 'hidden';
+                for(let i=0;i<this.arcs.length;i++) {
+                    this.arcs[i].style.opacity = 0;
+                }
             }
 
             append() {
@@ -249,7 +271,7 @@
                 let processedArcs = 0
                 for(let i=0;i<this.arcs.length;i++) {
                     if(this.arcs[i].style.opacity < 1) {
-                        this.arcs[i].style.opacity = Number(this.arcs[i].style.opacity) + .02;
+                        this.arcs[i].style.opacity = Number(this.arcs[i].style.opacity) + .025;
                         break;
                     }
                     ++processedArcs;
@@ -275,6 +297,9 @@
 
         }
 
+        const lineAnimator = new LineAnimations(messageFromGround, minigame);
+        let scTimeout = undefined;
+
         spawnChallenge();
 
         function resetChallenge() {
@@ -290,13 +315,15 @@
         }
 
         function failChallenge() {
+            // Send message to server here, increment timer
             console.log('FAILED THIS CHALLENGE');
             textBlock.style.backgroundColor = 'red';
         }
 
         function spawnChallenge() {
             const doSpawnText = Math.floor(Math.random() * 50) + 1;
-            const doSpawnTrain = Math.floor(Math.random() * 100) + 1;
+            // const doSpawnTrain = Math.floor(Math.random() * 100) + 1;
+            
             if(doSpawnText === 25 && !hasChallenge) {
                 const idxText = Math.floor(Math.random() * 6);
                 let idxColor = idxText;
@@ -319,25 +346,159 @@
                 failChallenge();
                 resetChallenge();
             }
-            if(!train && doSpawnTrain === 50) {
-                console.log('Make train!');
-                train = new Train(trainNoiseEl, minigame);
-            } else if (train) {
+
+            if (train) {
                 train.move();
-                if(train.finished) {
-                    console.log('OH NOT TRAIN IS HERE!', train);
-                    train.delete();
-                    train = undefined;
-                }
+                // if(train.finished) {
+                //     console.log('OH NOT TRAIN IS HERE!', train);
+                //     train.delete();
+                //     train = undefined;
+                // }
             }
-            setTimeout(spawnChallenge, 25);
+            scTimeout = setTimeout(spawnChallenge, 25);
         }
+
+        console.log('BINDING HAZARD');
+
+        socket.on("hazard", (payload) => {
+            console.log(`Careful, a ${payload.type.name}`);
+
+            if(payload.type.type === 'train') {
+                train = new Train(trainNoiseEl, minigame);
+            }
+        })
+
+        socket.on("msg", (payload) => {
+            console.log(`I received a ${payload.type} from my partner that says "${payload.message}."`);
+            if(payload.type === 'warning') {
+                lineAnimator.showWarning();
+            }
+            if(payload.type === 'reaction') {
+                lineAnimator.showThanks();
+            }
+        })
+
+        socket.on("avoided", (payload) => {
+            setMessage(`Nice, hazard avoided!`);
+            if(train) {
+                clearTrain();
+                lineAnimator.showThanks();
+            } else {
+                // Reaction already happened
+            }
+        })
+
+        socket.on("gameover", () => {
+            setMessage(`Game Over! Too Bad!`);
+            
+            clearTimeout(scTimeout);
+
+            train = undefined;
+
+            clearGameboard();
+
+            clearAllEvents();
+
+        })
+
+        function clearTrain() {
+            train.delete();
+            train = undefined;
+        }
+
+        reactButton.addEventListener("click", reactMethod, false);
+
+        reactMethod = function(e) {
+            console.log('Client button cliecked:', reactButton.dataset.action);
+            socket.emit('action', reactButton.dataset.action);
+            lineAnimator.disableMinigame();
+        }
+
     }
 
     function groundGame() {
         const personImg = document.createElement('img');
         const birdImg = document.createElement('img');
         const surgeEl = document.createElement('div');
+        const headTarget = document.createElement('div');
+        const messageFromLine = document.createElement('div');
+        messageFromLine.classList.add('linemessage');
+
+        headTarget.addEventListener('click', function(){
+            // Send message to server here, increment timer
+            console.log('Ow! You shot me you miserable dingus!');
+        });
+        headTarget.id = 'headtarget';
+
+        class GroundAnimations {
+            constructor(element, messageEl, parent) {
+                this.steppedDown = false;
+                this.steppedDownAt = undefined;
+                this.wavedAt = undefined;
+                this.downTime = 2000;
+                this.element = element;
+                this.messageEl = messageEl;
+                this.waving = false;
+                this.parent = parent;
+                this.append();
+            }
+
+            append() {
+                this.parent.appendChild(this.messageEl);
+            }
+
+            stepDown() {
+                minigame.style.top = '-100px';
+                this.steppedDown = true;
+                this.steppedDownAt = Date.now();
+                setTimeout(this.stepUp.bind(this), this.downTime);
+            }
+
+            stepUp() {
+                minigame.style.top = '0px';
+                this.steppedDown = false;
+                this.steppedDownAt = undefined;
+            }
+
+            wave() {
+                self = this;
+                this.element.style.left = '-100%';
+                
+                if(!this.waving) {
+                    console.log('waving now');
+                    this.wavedAt = Date.now();
+                    this.waving = true;
+                }
+
+                setTimeout(()=>{
+                    self.element.style.left = '0%';
+                    if(self.wavedAt + self.downTime > Date.now()) {
+                        setTimeout(self.wave.bind(self), 50);
+                    } else {
+                        self.unWave();
+                    }
+                }, 50)
+
+            }
+
+            unWave() {
+                this.waving = false;
+                this.element.style.left = '0%';
+            }
+
+            showThanks() {
+                this.messageEl.innerHTML = 'Phew, thanks!!';
+                this.messageEl.style.visibility = 'visible';
+
+                setTimeout(this.hideMessage.bind(this), 2000);
+            }
+
+            hideMessage() {
+                this.messageEl.style.visibility = 'hidden';
+            }
+        }
+
+        const groundAnimator = new GroundAnimations(personImg, messageFromLine, minigame);
         surgeEl.id = 'surge'
 
         personImg.src = 'person-sprite.png';
@@ -351,11 +512,13 @@
         minigame.style.cursor = 'crosshair';
 
         minigame.appendChild(personImg);
+        minigame.appendChild(headTarget);
         // minigame.appendChild(surge);
 
         // game vars
         let bird = undefined;
         let surge = undefined;
+        let scTimeout = undefined;
 
         class Bird {
             constructor(element, parent, reversed) {
@@ -455,12 +618,13 @@
                 this.initialLeft = -32;
                 this.left = -32;
                 this.leftLimit = 160;
-                this.speed = 2;
+                this.speed = 1.3;
                 this.hitPlayer = false;
                 this.append();
             }
 
             delete() {
+                this.element.style.left = this.initialLeft;
                 this.parent.removeChild(this.element);
             }
 
@@ -469,7 +633,6 @@
             }
 
             move() {
-                console.log(this.left, this.leftLimit);
                 if(this.left >= this.leftLimit) {
                     this.left = this.initialLeft;
                     this.hitPlayer = true;
@@ -481,13 +644,14 @@
             setLeft() {
                 this.element.style.left = `${this.left}px`
             }
-       }
+        }
 
         spawnChallenge();
 
         function spawnChallenge() {
             const doSpawnBird = Math.floor(Math.random() * 50) + 1;
-            const doSpawnSurge = Math.floor(Math.random() * 100) + 1;
+            // const doSpawnSurge = Math.floor(Math.random() * 100) + 1;
+            
             // the challenge!
             if(bird && bird.away) {
                 bird.delete();
@@ -499,20 +663,75 @@
                 bird.move();
             }
 
-            if(surge && surge.hitPlayer) {
-                console.log('PLAYER IS DEAD!')
-                surge.delete();
-                surge = undefined;
-            }
-
-            if(!surge && doSpawnSurge === 25) {
-                surge = new Surge(surgeEl, minigame);
-            } else if (surge) {
+            if (surge) {
                 surge.move();
             }
 
-            setTimeout(spawnChallenge, 25);
+            scTimeout = setTimeout(spawnChallenge, 25);
         }
+
+        socket.on("hazard", (payload) => {
+            console.log(`Careful, a ${payload.type.name}`);
+
+            if(payload.type.type === 'surge') {
+                console.log('SPAWNING NEW SURGE');
+                surge = new Surge(surgeEl, minigame);
+            }
+        })
+
+        socket.on("msg", (payload) => {
+            console.log(`I received a ${payload.type} from my partner that says "${payload.message}."`);
+            if(payload.type === 'warning') {
+                groundAnimator.wave();
+            }
+            if(payload.type === 'reaction') {
+                groundAnimator.showThanks();
+            }
+        })
+
+        socket.on("avoided", (payload) => {
+            setMessage(`Nice, hazard avoided!`);
+            if(surge) {
+                clearSurge();
+                groundAnimator.showThanks();
+            } else {
+                // Reaction already happened
+            }
+        })
+
+        socket.on("gameover", () => {
+            setMessage(`Game Over! Too Bad!`);
+            
+            clearTimeout(scTimeout);
+
+            surge = undefined;
+
+            clearGameboard();
+
+            clearAllEvents();
+        })
+
+        reactButton.addEventListener("click", reactMethod, false);
+
+        reactMethod = function(e) {
+            console.log('Client button cliecked:', reactButton.dataset.action);
+            socket.emit('action', reactButton.dataset.action);
+            groundAnimator.stepDown();
+        }
+
+        function clearSurge() {
+            surge.delete();
+            surge = undefined;
+        }
+
+    }
+
+    function clearAllEvents() {
+        socket.removeAllListeners('hazard');
+        socket.removeAllListeners('msg');
+        socket.removeAllListeners('avoided');
+        socket.removeAllListeners('gameover');
+        reactButton.removeEventListener('click', reactMethod);
     }
 
 })();

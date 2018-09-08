@@ -63,13 +63,22 @@ function findPartner(user) {
 	}
 }
 
+function makeNewGameSameUsers(user1, user2) {
+	games.splice(games.indexOf(user1.game), 1);
+	games.push(new Game(user1, user2).init());
+}
+
 /**
  * Remove user session & game instance
  * @param {User} user
  */
 function removeUser(user) {
-	user.game.end();
-	games.splice(games.indexOf(user.game), 1);
+	try {
+		user.game.end();
+		games.splice(games.indexOf(user.game), 1);
+	} catch (err) {
+		console.log('Game has already been removed');
+	}
 	users.splice(users.indexOf(user), 1);
 }
 
@@ -81,7 +90,7 @@ class Hazard {
 	constructor(hazard) {
 		this.type = hazard;
 		this.spawnedAt = Date.now();
-		this.reactionCutoff = 5000;
+		this.reactionCutoff = 4000;
 		this.warnedAt = undefined;
 		this.reactedAt = undefined;
 	}
@@ -140,9 +149,11 @@ class Game {
 
 	runHazardSpawner() {
 		const doSpawn = Math.floor(Math.random() * 100) + 1;
-		if(doSpawn === 50 && !this.activeHazard) {
-			this.activeHazard = new Hazard(Hazards[Math.round(Math.random())]);
+		if(doSpawn < 10 && !this.activeHazard) {
+			// this.activeHazard = new Hazard(Hazards[Math.round(Math.random())]);
+			this.activeHazard = new Hazard(Hazards[0]);
 			console.log('Spawning a hazard!', this.activeHazard.type.observedBy, this.activeHazard.type.impacts);
+			console.log('USERS LENGTH', this.users.length);
 			this.users.forEach(user => {
 				if(user.job.type === this.activeHazard.type.observedBy) {
 					this.updateClient(user, 'hazard', this.activeHazard);
@@ -156,6 +167,8 @@ class Game {
 			if(this.activeHazard.spawnedAt + this.activeHazard.reactionCutoff < Date.now() && !this.activeHazard.reactedAt ||
 				this.activeHazard.reactedAt && this.activeHazard.spawnedAt + this.activeHazard.reactionCutoff < this.activeHazard.reactedAt) {
 				console.log('GAME OVER');
+				this.updateClients('gameover');
+				this.end();
 			}
 		}
 	}
@@ -168,6 +181,7 @@ class Game {
 	}
 
 	updateClient(user, event, payload) {
+		console.log('Update User');
 		user.socket.emit(event, payload);
 	}
 
@@ -210,6 +224,7 @@ class Game {
 	end() {
 		console.log('Ending game', this.startTime);
 		clearInterval(this.ticker);
+		makeNewGameSameUsers(this.user1, this.user2);
 	}
 
 	/**
