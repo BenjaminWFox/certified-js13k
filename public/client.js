@@ -252,7 +252,7 @@
     window.addEventListener("load", init, false);
 
     function lineGame() {
-        const colors = ['red', 'orange', 'yellow', 'green', 'blue', 'white'];
+        const colors = ['red', 'yellow', 'green', 'blue', 'white'];
         const trainNoiseEl = document.createElement('div');
         const messageFromGround = document.createElement('div');
         const arc1 = document.createElement('div');
@@ -288,7 +288,7 @@
             console.log('kc', kc);
             if(hasChallenge && minigameEnabled) {
                 if(answer === 'r' && kc === 82 || 
-                    answer === 'o' && kc === 79 ||
+                    // answer === 'o' && kc === 79 ||
                     answer === 'y' && kc === 89 ||
                     answer === 'g' && kc === 71 ||
                     answer === 'b' && kc === 66 ||
