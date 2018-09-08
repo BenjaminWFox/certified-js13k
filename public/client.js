@@ -25,6 +25,7 @@
     const warnButton = document.getElementById('warnbtn');
     const reactButton = document.getElementById('reactbtn');
     const endMessage = document.getElementById('endmessage');
+    const userText = document.getElementsByClassName('userinfo');
 
     function disableButtons() {
         disableGameButtons();
@@ -72,7 +73,6 @@
         timer.innerHTML = '';
         minigame.style.backgroundImage = '';
         while (minigame.firstChild) {
-            console.log('Clearing', minigame.firstChild);
             minigame.removeChild(minigame.firstChild);
         }
     }
@@ -206,7 +206,7 @@
             console.log('We won!!');
             disableGameButtons();
             gameOverResponse();
-            setEndMessage('Well done, you won!');
+            setEndMessage('Well done, you won! The line is repaired!');
         })
 
         readyButton.addEventListener("click", function (e) {
@@ -242,10 +242,11 @@
         message = document.getElementById("message");
         timer = document.getElementById("timer");
         minigame = document.getElementById("game");
+        Array.from(userText).forEach(node => {
+            node.innerHTML = 'Waiting...';
+        });
         disableButtons();
-        console.log('socket.on', socket);
         bind();
-        console.log('socket.on', socket);
     }
 
     window.addEventListener("load", init, false);
@@ -258,6 +259,7 @@
         const arc2 = document.createElement('div');
         const arc3 = document.createElement('div');
         const textBlock = document.createElement('div');
+        const doh = document.getElementById('doh');
         const answerLimit = 1500;
         let hasChallenge = false;
         let train = undefined;
@@ -431,6 +433,10 @@
             // Send message to server here, increment timer
             // console.log('FAILED THIS CHALLENGE');
             socket.emit('minifail');
+            doh.style.display = 'block';
+            setTimeout(() => {
+                doh.style.display = 'none';
+            }, 250);
             textBlock.style.backgroundColor = 'red';
         }
 
@@ -523,14 +529,23 @@
         const surgeEl = document.createElement('div');
         const headTarget = document.createElement('div');
         const messageFromLine = document.createElement('div');
+        const exclamations = document.getElementById('exclamations');
         messageFromLine.classList.add('linemessage');
 
         headTarget.addEventListener('click', function(){
             // Send message to server here, increment timer
-            socket.emit('minifail');
+            groundMinifail();
             console.log('Ow! You shot me you miserable dingus!');
         });
         headTarget.id = 'headtarget';
+
+        function groundMinifail() {
+            exclamations.style.display = 'block';
+            setTimeout(() => {
+                exclamations.style.display = 'none';
+            }, 250);
+            socket.emit('minifail');
+        }
 
         class GroundAnimations {
             constructor(element, messageEl, parent) {
@@ -669,7 +684,7 @@
                     ) {
                         this.hitTarget = true;
                         this.flyingAway = true;
-                        socket.emit('minifail');
+                        groundMinifail();
                         // console.log('Hit the target!!');
                     }
                 }
