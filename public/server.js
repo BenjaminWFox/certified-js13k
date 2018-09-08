@@ -149,11 +149,12 @@ class Game {
 
 	runHazardSpawner() {
 		const doSpawn = Math.floor(Math.random() * 100) + 1;
-		if(doSpawn < 10 && !this.activeHazard) {
-			// this.activeHazard = new Hazard(Hazards[Math.round(Math.random())]);
-			this.activeHazard = new Hazard(Hazards[0]);
-			console.log('Spawning a hazard!', this.activeHazard.type.observedBy, this.activeHazard.type.impacts);
-			console.log('USERS LENGTH', this.users.length);
+		if(doSpawn === 50 && !this.activeHazard) {
+			// 0=surge 1=train
+			this.activeHazard = new Hazard(Hazards[Math.round(Math.random())]);
+			// this.activeHazard = new Hazard(Hazards[0]);
+			// console.log('Spawning a hazard!', this.activeHazard.type.observedBy, this.activeHazard.type.impacts);
+			// console.log('USERS LENGTH', this.users.length);
 			this.users.forEach(user => {
 				if(user.job.type === this.activeHazard.type.observedBy) {
 					this.updateClient(user, 'hazard', this.activeHazard);

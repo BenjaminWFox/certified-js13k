@@ -9,7 +9,12 @@
         playerId,
         minigame,
         playerJob,
-        reactMethod;
+        reactMethod,
+        hazardPresent,
+        hazardResponse,
+        messageResponse,
+        avoidedResponse,
+        gameOverResponse;
     const readyButton = document.getElementById('readybtn');
     const warnButton = document.getElementById('warnbtn');
     const reactButton = document.getElementById('reactbtn');
@@ -107,6 +112,24 @@
             });
         });
 
+        socket.on("hazard", (payload) => {
+            console.log('HAZARD');
+            hazardResponse(payload);
+        })
+
+        socket.on("msg", (payload) => {
+            console.log('On message', messageResponse);
+            messageResponse(payload);
+        })
+
+        socket.on("avoided", (payload) => {
+            avoidedResponse(payload);
+        })
+
+        socket.on("gameover", () => {
+            gameOverResponse();
+        })
+
         readyButton.addEventListener("click", function (e) {
             console.log('Client button cliecked:', readyButton.dataset.action);
             socket.emit('action', readyButton.dataset.action);
@@ -117,6 +140,11 @@
             socket.emit('action', warnButton.dataset.action);
         }, false);
 
+        reactButton.addEventListener("click", function (e) {
+            console.log('reactButton clicked')
+            socket.emit('action', reactButton.dataset.action);
+            reactMethod();
+        }, false);
     }
 
     /**
@@ -145,7 +173,7 @@
         const arc2 = document.createElement('div');
         const arc3 = document.createElement('div');
         const textBlock = document.createElement('div');
-        const answerLimit = 2000;
+        const answerLimit = 1500;
         let hasChallenge = false;
         let train = undefined;
         let answer = undefined;
@@ -321,7 +349,7 @@
         }
 
         function spawnChallenge() {
-            const doSpawnText = Math.floor(Math.random() * 50) + 1;
+            const doSpawnText = Math.floor(Math.random() * 75) + 1;
             // const doSpawnTrain = Math.floor(Math.random() * 100) + 1;
             
             if(doSpawnText === 25 && !hasChallenge) {
@@ -360,15 +388,14 @@
 
         console.log('BINDING HAZARD');
 
-        socket.on("hazard", (payload) => {
+        hazardResponse = function(payload) {
             console.log(`Careful, a ${payload.type.name}`);
 
             if(payload.type.type === 'train') {
                 train = new Train(trainNoiseEl, minigame);
             }
-        })
-
-        socket.on("msg", (payload) => {
+        }
+        messageResponse = function(payload) {
             console.log(`I received a ${payload.type} from my partner that says "${payload.message}."`);
             if(payload.type === 'warning') {
                 lineAnimator.showWarning();
@@ -376,9 +403,8 @@
             if(payload.type === 'reaction') {
                 lineAnimator.showThanks();
             }
-        })
-
-        socket.on("avoided", (payload) => {
+        }
+        avoidedResponse = function(payload) {
             setMessage(`Nice, hazard avoided!`);
             if(train) {
                 clearTrain();
@@ -386,9 +412,8 @@
             } else {
                 // Reaction already happened
             }
-        })
-
-        socket.on("gameover", () => {
+        }
+        gameOverResponse = function() {
             setMessage(`Game Over! Too Bad!`);
             
             clearTimeout(scTimeout);
@@ -397,21 +422,16 @@
 
             clearGameboard();
 
-            clearAllEvents();
+        }
 
-        })
+        reactMethod = function(e) {
+            console.log('Client button cliecked:', reactButton.dataset.action);
+            lineAnimator.disableMinigame();
+        }
 
         function clearTrain() {
             train.delete();
             train = undefined;
-        }
-
-        reactButton.addEventListener("click", reactMethod, false);
-
-        reactMethod = function(e) {
-            console.log('Client button cliecked:', reactButton.dataset.action);
-            socket.emit('action', reactButton.dataset.action);
-            lineAnimator.disableMinigame();
         }
 
     }
@@ -487,7 +507,7 @@
             }
 
             showThanks() {
-                this.messageEl.innerHTML = 'Phew, thanks!!';
+                this.messageEl.innerHTML = 'Fixed it! Thanks!!';
                 this.messageEl.style.visibility = 'visible';
 
                 setTimeout(this.hideMessage.bind(this), 2000);
@@ -616,7 +636,7 @@
                 this.parent = parent;
                 this.spawnedAt = Date.now();
                 this.initialLeft = -32;
-                this.left = -32;
+                this.left = this.initialLeft;
                 this.leftLimit = 160;
                 this.speed = 1.3;
                 this.hitPlayer = false;
@@ -624,11 +644,12 @@
             }
 
             delete() {
-                this.element.style.left = this.initialLeft;
+                this.element.style.left = `${this.initialLeft}px`;
                 this.parent.removeChild(this.element);
             }
 
             append() {
+                this.element.style.left = `${this.initialLeft}px`;
                 this.parent.appendChild(this.element);
             }
 
@@ -670,16 +691,15 @@
             scTimeout = setTimeout(spawnChallenge, 25);
         }
 
-        socket.on("hazard", (payload) => {
+        hazardResponse = function(payload) {
             console.log(`Careful, a ${payload.type.name}`);
 
             if(payload.type.type === 'surge') {
                 console.log('SPAWNING NEW SURGE');
                 surge = new Surge(surgeEl, minigame);
             }
-        })
-
-        socket.on("msg", (payload) => {
+        }
+        messageResponse = function(payload) {
             console.log(`I received a ${payload.type} from my partner that says "${payload.message}."`);
             if(payload.type === 'warning') {
                 groundAnimator.wave();
@@ -687,9 +707,8 @@
             if(payload.type === 'reaction') {
                 groundAnimator.showThanks();
             }
-        })
-
-        socket.on("avoided", (payload) => {
+        }
+        avoidedResponse = function(payload) {
             setMessage(`Nice, hazard avoided!`);
             if(surge) {
                 clearSurge();
@@ -697,9 +716,8 @@
             } else {
                 // Reaction already happened
             }
-        })
-
-        socket.on("gameover", () => {
+        }
+        gameOverResponse = function() {
             setMessage(`Game Over! Too Bad!`);
             
             clearTimeout(scTimeout);
@@ -707,15 +725,10 @@
             surge = undefined;
 
             clearGameboard();
-
-            clearAllEvents();
-        })
-
-        reactButton.addEventListener("click", reactMethod, false);
+        }
 
         reactMethod = function(e) {
             console.log('Client button cliecked:', reactButton.dataset.action);
-            socket.emit('action', reactButton.dataset.action);
             groundAnimator.stepDown();
         }
 
@@ -724,14 +737,6 @@
             surge = undefined;
         }
 
-    }
-
-    function clearAllEvents() {
-        socket.removeAllListeners('hazard');
-        socket.removeAllListeners('msg');
-        socket.removeAllListeners('avoided');
-        socket.removeAllListeners('gameover');
-        reactButton.removeEventListener('click', reactMethod);
     }
 
 })();
