@@ -22,11 +22,13 @@
         canWarn = true,
         canReact = true,
         lineKeyDownFn,
-        groundKeyDownFn;
+        groundKeyDownFn,
+        reactionMessage;
     const readyButton = document.getElementById('readybtn');
     const warnButton = document.getElementById('warnbtn');
     const reactButton = document.getElementById('reactbtn');
     const endMessage = document.getElementById('endmessage');
+    const playerReactionMessage = document.getElementById('playeractionmessage'); 
     const userText = document.getElementsByClassName('userinfo');
 
     function disableButtons() {
@@ -99,11 +101,15 @@
         if(playerJob.type === 'line') {
             lineInstructions.style.display = 'block';
             groundInstructions.style.display = 'none';
+            reactionMessage = 'You pause to re-route the power surge!';
+            playerReactionMessage.innerHTML = reactionMessage;
             minigame.appendChild(lineInstructions);
         }
         if(playerJob.type === 'ground') {
             groundInstructions.style.display = 'block';
             lineInstructions.style.display = 'none';
+            reactionMessage = 'You step down off the tracks to avoid the train!';
+            playerReactionMessage.innerHTML = reactionMessage;
             minigame.appendChild(groundInstructions);
         }
     }
@@ -345,12 +351,14 @@
             }
 
             disableMinigame() {
+                playerReactionMessage.style.display = 'block';
                 minigameEnabled = false;
                 textBlock.style.opacity = .25;
                 setTimeout(this.enableMinigame.bind(this), 2000);
             }
 
             enableMinigame() {
+                playerReactionMessage.style.display = 'none';
                 minigameEnabled = true;
                 textBlock.style.opacity = 1;
             }
@@ -563,6 +571,8 @@
         const headTarget = document.createElement('div');
         const messageFromLine = document.createElement('div');
         const exclamations = document.getElementById('exclamations').cloneNode(true);
+        const warnExclamations = exclamations.cloneNode(true);
+        warnExclamations.id = 'warnexclamations';
         messageFromLine.classList.add('linemessage');
 
         headTarget.addEventListener('click', function(){
@@ -615,6 +625,7 @@
             }
 
             stepDown() {
+                playerReactionMessage.style.display = 'block';
                 minigame.style.top = '-100px';
                 this.steppedDown = true;
                 this.steppedDownAt = Date.now();
@@ -622,6 +633,7 @@
             }
 
             stepUp() {
+                playerReactionMessage.style.display = 'none';                
                 minigame.style.top = '0px';
                 this.steppedDown = false;
                 this.steppedDownAt = undefined;
@@ -630,7 +642,8 @@
             wave() {
                 self = this;
                 this.element.style.left = '-100%';
-                
+                warnExclamations.style.display = 'block';
+
                 if(!this.waving) {
                     console.log('waving now');
                     this.wavedAt = Date.now();
@@ -639,6 +652,7 @@
 
                 setTimeout(()=>{
                     self.element.style.left = '0%';
+                    warnExclamations.style.display = 'none';
                     if(self.wavedAt + self.downTime > Date.now()) {
                         setTimeout(self.wave.bind(self), 50);
                     } else {
@@ -680,6 +694,7 @@
         minigame.appendChild(personImg);
         minigame.appendChild(headTarget);
         minigame.appendChild(exclamations);
+        minigame.appendChild(warnExclamations);
 
         // game vars
         let bird = undefined;
