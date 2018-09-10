@@ -170,10 +170,19 @@
 
         function keySwitch(e) {
             if(playerJob.type === 'line') {
-                lineKeyDownFn(e);
+                try {
+                    lineKeyDownFn(e);
+                } catch (err) {
+                    console.log('Key fn not yet initialized');
+                }
             }
             if(playerJob.type === 'ground') {
-                groundKeyDownFn(e);
+                try {
+                    groundKeyDownFn(e);
+                } catch (err) {
+                    console.log('Key fn not yet initialized');
+                }
+                
             }
         }
 
@@ -322,13 +331,17 @@
 
         class LineAnimations {
             constructor(element, parent) {
-                this.element = element;
+                this.warningEl = element.cloneNode();
+                this.warningEl.classList.add('groundwarning')
+                this.reactionEl = element.cloneNode();
+                this.reactionEl.classList.add('groundreaction')
                 this.parent = parent;
                 this.append();
             }
 
             append() {
-                this.parent.appendChild(this.element);
+                this.parent.appendChild(this.warningEl);
+                this.parent.appendChild(this.reactionEl);
             }
 
             disableMinigame() {
@@ -343,21 +356,21 @@
             }
 
             showWarning() {
-                this.element.innerHTML = 'Watch Out! Surge Incoming!!';
-                this.element.style.visibility = 'visible';
+                this.warningEl.innerHTML = 'Watch Out! Surge Incoming!!';
+                this.warningEl.style.visibility = 'visible';
 
-                setTimeout(this.hideMessage.bind(this), 2000);
+                setTimeout(this.hideMessage.bind(this.warningEl), 2000);
             }
 
             showThanks() {
-                this.element.innerHTML = 'Close call on that train, thanks!';
-                this.element.style.visibility = 'visible';
+                this.reactionEl.innerHTML = 'Close call on that train, thanks!';
+                this.reactionEl.style.visibility = 'visible';
 
-                setTimeout(this.hideMessage.bind(this), 2000);
+                setTimeout(this.hideMessage.bind(this.reactionEl), 2000);
             }
 
             hideMessage() {
-                this.element.style.visibility = 'hidden';
+                this.style.visibility = 'hidden';
             }
         }
 
@@ -436,7 +449,7 @@
         spawnChallenge();
 
         function resetChallenge() {
-            textBlock.innerHTML = '';
+            // textBlock.innerHTML = '';
             hasChallenge = false;
             answer = undefined;
             spawnedAt = undefined;
@@ -444,7 +457,8 @@
 
         function passChallenge() {
             // console.log('PASSED THIS CHALLENGE');
-            textBlock.style.backgroundColor = 'green';
+            // textBlock.style.backgroundColor = 'green';
+            textBlock.innerHTML = '<span style="color:green;">&#x2714;</span>';
         }
 
         function failChallenge() {
@@ -455,7 +469,8 @@
             setTimeout(() => {
                 doh.style.display = 'none';
             }, 250);
-            textBlock.style.backgroundColor = 'red';
+            // textBlock.style.backgroundColor = 'red';
+            textBlock.innerHTML = '<span style="color:red;">X</span>';
         }
 
         function spawnChallenge() {

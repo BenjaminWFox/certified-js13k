@@ -127,15 +127,28 @@
         transform-origin: center center;
         z-index: 10;
     }
-    .groundmessage {
+    .groundwarning {
         position: absolute;
-        left: 15px;
+        font-size:1.25em;
+        left: 5px;
         bottom: 15px;
         border: 1px #000 solid;
         border-radius: 10px;
         padding: 10px;
         visibility: hidden;
         z-index: 10;
+        background-color: #fff;
+    }
+    .groundreaction {
+        position: absolute;
+        font-size:1.25em;
+        right: 5px;
+        bottom: 15px;
+        border: 1px #000 solid;
+        border-radius: 10px;
+        padding: 10px;
+        visibility: hidden;
+        z-index: 9;
         background-color: #fff;
     }
     .linemessage {
@@ -265,6 +278,18 @@
         font-weight: bold;
         padding: 5px;
     }
+    #playeractionmessage {
+        position: absolute;
+        font-size: 1.5em;
+        left: 50%;
+        top: 40%;
+        transform: translate(-50%, -50%);
+        background-color: #fff;
+        border: 1px #000 solid;
+        padding: 10px;
+        width: 85%;
+        z-index: 20;
+    }
 </style>
 </head>
 <body>
@@ -278,6 +303,7 @@
     <div id="timer"></div>
     <div id="message"></div>
     <div class="gamewindow">
+        <div style="display: none;" id="playeractionmessage">You step off the tracks to avoid the train!</div>
         <div id="game" class="game">
             
         </div>
