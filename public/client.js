@@ -162,6 +162,7 @@
 
         socket.on("gameon", () => {
             console.log('GAME ON!!');
+            setMessage(`Ready, set go! Good luck!`);
             clearEndMessage();
             disableReadyButton();
             enableGameButtons();
@@ -469,6 +470,7 @@
         function passChallenge() {
             // console.log('PASSED THIS CHALLENGE');
             // textBlock.style.backgroundColor = 'green';
+            setMessage('Nice, correct color!');
             textBlock.innerHTML = '<span style="color:green;">&#x2714;</span>';
         }
 
@@ -476,6 +478,7 @@
             // Send message to server here, increment timer
             // console.log('FAILED THIS CHALLENGE');
             socket.emit('minifail');
+            setMessage('Opps, not the right color!')
             doh.style.display = 'block';
             setTimeout(() => {
                 doh.style.display = 'none';
@@ -726,6 +729,7 @@
                 this.append();
                 this.element.addEventListener('click', (e) => {
                     console.log('bird clicked!');
+                    setMessage('Got that bird, yah!');
                     this.flyingAway = true;
                 });
             }
@@ -755,6 +759,7 @@
                     ) {
                         this.hitTarget = true;
                         this.flyingAway = true;
+                        setMessage('Ow, it has large talons!');
                         groundMinifail();
                         // console.log('Hit the target!!');
                     }
