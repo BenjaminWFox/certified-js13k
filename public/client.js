@@ -274,6 +274,7 @@
         message = document.getElementById("message");
         timer = document.getElementById("timer");
         minigame = document.getElementById("game");
+        minigame.draggable = false;
         Array.from(userText).forEach(node => {
             node.innerHTML = 'Waiting...';
         });
