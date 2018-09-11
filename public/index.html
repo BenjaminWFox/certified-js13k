@@ -221,7 +221,7 @@
         display: none;
         padding: 0px 8px;
         margin-top: -5px;
-        font-size:.9em;
+        font-size:.75em;
     }
     #endmessage {
         background-color: #fff;
@@ -330,26 +330,38 @@
     <p>You are the <em><strong>GROUND</strong></em> worker! Work with your partner to fix the powerline. It should only take a minute, but small mistakes add up, and big ones send you to the hospital!</p>
     <p>Your job is to:</p>
     <ul>
-        <li>Keep the birds off the line worker with your BB gun. (shoot w/ mouse)</li>
-        <li>Warn the line worker of incoming power surges. (watch for surges on the lower line!)</li>
+        <li>Keep the birds off the line worker with your BB gun.</li>
+        <li>Warn the line worker of incoming power surges. Surges are bright yellow balls coming from the left!</li>
+        <li>React to warnings of oncoming trains. Watch for the line worker waving frantically.</li>
     </ul>
     <p>You need to watch out for:</p>
     <ul>
-        <li>The line worker warning you of oncoming trains. React too slow and its game-over!</li>
-        <li>Not shooting the line worker in the head. It's just BBs, but it hurts and adds to the timer!</li>
+        <li>Oncoming trains! React too slow and its game-over!</li>
+        <li>Missing birds & hitting your partner! It adds to the timer!</li>
+    </ul>
+    <p>Controls:</p>
+    <ul>
+        <li>Use mouse to shoot the birds.</li>
+        <li>Use keyboard to send warnings (w) and react (r).</li>
     </ul>
 </div>
 <div id="lineinstructions" class="instructions">
     <p>You are the <em><strong>LINE</strong></em> worker! Work with your partner to fix the powerline. It should only take a minute, but small mistakes add up, and big ones send you to the hospital!</p>
     <p>Your job is to:</p>
     <ul>
-        <li>Fix wires by typing the first letter of the <strong>color</strong> of the word shown. (use keybaord)</li>
-        <li>Send warning to the ground worker of oncoming trains. (watch for sound waves on the right!)</li>
+        <li>Fix wires by typing the first letter of the <strong>color</strong> of the word shown.</li>
+        <li>Warn the ground worker of oncoming trains. Sound waves, big half-circles on the right, indicate incoming trains!.</li>
+        <li>React to warnings of incoming surges. Warnings will come in towards the bottom.</li>
     </ul>
     <p>You need to watch out for:</p>
     <ul>
-        <li>The ground worker warning you of incoming surges. React too slow and its game-over!</li>
+        <li>Incoming surge warnings. React too slow and its game-over!</li>
         <li>Mis-identifying the colors! It adds to the timer!</li>
+    </ul>
+    <p>Controls:</p>
+    <ul>
+        <li>Click buttons @ bottom to send warnings and react.</li>
+        <li>Use keyboard to identify the colors (w/r/b/g/y).</li>
     </ul>
 </div>
 <script src="/socket.io/socket.io.js"></script>

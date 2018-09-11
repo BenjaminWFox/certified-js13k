@@ -126,8 +126,8 @@
             clearGameboard();
             showInstructions();
             if (playerJob.type === 'ground') {
-                warnButton.innerHTML = 'Send Warning (z)';
-                reactButton.innerHTML = 'React to Warning (b)';
+                warnButton.innerHTML = 'Send Warning (w)';
+                reactButton.innerHTML = 'React to Warning (r)';
             }
             console.log('start', playerId, playerJob.title);
             setMessage("Waiting for players to ready up.");
@@ -339,6 +339,8 @@
             constructor(element, parent) {
                 this.warningEl = element.cloneNode();
                 this.warningEl.classList.add('groundwarning')
+                this.warningEl.style.backgroundColor = 'red';
+                this.warningEl.style.color = 'white';
                 this.reactionEl = element.cloneNode();
                 this.reactionEl.classList.add('groundreaction')
                 this.parent = parent;
@@ -573,6 +575,8 @@
         const exclamations = document.getElementById('exclamations').cloneNode(true);
         const warnExclamations = exclamations.cloneNode(true);
         warnExclamations.id = 'warnexclamations';
+        warnExclamations.draggable = false;
+        exclamations.draggable = false;
         messageFromLine.classList.add('linemessage');
 
         headTarget.addEventListener('click', function(){
@@ -585,12 +589,12 @@
         groundKeyDownFn = function(e) {
             const kc = e.keyCode;
             console.log('kc', kc);
-            if(kc === 90) { // z
+            if(kc === 87) { // z
                 if(!warnButton.disabled) {
                     socket.emit('action', warnButton.dataset.action);
                 }
             }
-            if(kc === 66) { // b
+            if(kc === 82) { // b
                 if(!reactButton.disabled) {
                     socket.emit('action', reactButton.dataset.action);
                     reactMethod();
